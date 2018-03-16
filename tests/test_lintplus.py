@@ -7,11 +7,11 @@
 import unittest
 from click.testing import CliRunner
 
-from lintplus import lintplus
-from lintplus import cli
+from lintful import lintful
+from lintful import cli
 
 
-class TestLintplus(unittest.TestCase):
+class TestLintful(unittest.TestCase):
     """Tests for `lintplus` package."""
 
     def setUp(self):
