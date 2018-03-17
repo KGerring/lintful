@@ -14,10 +14,12 @@ import re # isort:skip
 from pylint.config import ConfigurationMixIn, OptionsManagerMixIn, Option
 import configparser
 
-_parser = configparser.ConfigParser(inline_comment_prefixes=('#', ';'))
+PYLINT_CONFIG = os.environ.get('PYLINT_CONFIG', None)
 
+_parser = configparser.ConfigParser(inline_comment_prefixes=('#', ';')) #TODO remove
 from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
 
 @__all__.add
 def find_lintfulrc():

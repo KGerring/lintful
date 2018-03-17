@@ -35,6 +35,46 @@ def meta_config(linter):
 	return meta
 
 
+@__all__.add
+def enabled_messages(linter):
+	return set(filter(linter.is_message_enabled, linter.msgs_store._messages.copy()))
+
+
+@__all__.add
+def disabled_messages(linter):
+	from itertools import filterfalse
+	return set(filterfalse(linter.is_message_enabled, linter.msgs_store._messages.copy()))
+
+
+@__all__.add
+def enabled_reports(linter):
+	import itertools
+	return [report for report in itertools.chain.from_iterable(
+			linter._reports.values()) if linter.report_is_enabled(report[0])]
+
+
+def disabled_reports(linter):
+	import itertools
+	
+	return [report for report in itertools.chain.from_iterable(
+			linter._reports.values()) if not linter.report_is_enabled(report[0])]
+
+
+@__all__.add
+def checker_messages(linter, enabled_only=False):
+	from collections import OrderedDict
+	
+	results = OrderedDict()
+	for checker_name in sorted(linter._checkers):
+		checkerdict = OrderedDict()
+		for mid in sorted(linter._checker_messages(checker_name)):
+			if enabled_only and not linter.is_message_enabled(mid):
+				pass
+			else:
+				checkerdict[mid] = linter._message_symbol(mid)
+		results[checker_name] = checkerdict
+	return results
+
 
 
 if __name__ == '__main__': print(__file__)
