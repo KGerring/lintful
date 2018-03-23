@@ -57,6 +57,10 @@ class Reporter(BaseReporter):
 	#else:
 	#	self.fmt = self.default_template
 	
+	def get_manager(self, current_name):
+		from astroid import MANAGER
+		return MANAGER.astroid_cache.get(current_name)
+	
 	def clear(self):
 		"""Clear the `messages` attribute of data"""
 		self.messages.clear()
@@ -120,10 +124,20 @@ class Reporter(BaseReporter):
 		"""
 		self.current_module = module
 		self.current_file = filepath
+		self.current_ast = self.get_manager(module)
+		
 	
 	def _display(self, layout):
 		print(file=self.out)
 		TextWriter().format(layout, self.out)
+	
+	def on_close(self, stats, previous_stats):
+		"""Hook called when a module finished analyzing.
+		
+		previous_stats = config.load_results(self.file_state.base_name)
+		self.reporter.on_close(self.stats, previous_stats)
+		"""
+		print('closed')
 
 
 class ColorizedTemplate(object):

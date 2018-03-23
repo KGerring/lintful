@@ -23,6 +23,11 @@ from . import guireporter
 #from startups.helpers.decorators import ExportsList
 #__all__ = ExportsList(initlist=__all__, __file__=__file__) # all-decorator: __all__
 
+#self.open()
+#self.set_current_module(module)
+#self.stats = _merge_stats(all_stats)
+#self._parallel_task
+#l.set_current_module
 
 
 

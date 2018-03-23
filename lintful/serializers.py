@@ -9,7 +9,7 @@
 """
 
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['ExternalDependenciesGraph', 'make_tree_defs', 'string_tree_defs']
+__all__ = ['ExternalDependenciesGraph', 'make_tree_defs', 'string_tree_defs', 'get_tables']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -26,7 +26,7 @@ from importpy.refactoring.config import JSONSerializer
 from pylint.reporters.ureports.nodes import (BaseLayout, EvaluationSection, Paragraph, Section, Table, Text, Title, VNode, VerbatimText)
 
 from lintplus.py_lint import ExternalDependenciesGraph, make_tree_defs, string_tree_defs
-
+from importpy.refactoring.pylint_checkers import get_tables
 #from pylint.config import Option, OptionParser, ConfigurationMixIn
 #UNUSED = L.args['importpy.refactoring._pylint']['unused-import']
 #importpy.refactoring.config.dependencies_graph
@@ -36,6 +36,8 @@ from lintplus.py_lint import ExternalDependenciesGraph, make_tree_defs, string_t
 
 from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
+
 
 @__all__.add
 def get_graphviz_source(filename, directory=None, format='dot', engine='dot'):

@@ -18,7 +18,7 @@ from . import plugins
 from . import handlers
 from . import serializers
 from . import refactors
-
+from . import utils
 
 import setup_module
 all_by_module = {

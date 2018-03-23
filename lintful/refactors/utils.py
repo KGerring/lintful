@@ -23,7 +23,13 @@ OPTIONS = (
 	('allow-local-reimport',
 	 {'default': True,
 	  'help': 'Allow a reimport of something within a function or class (to allow moving)',
-	  'metavar': '<y_or_n>', 'type': 'yn'}),
+	  'metavar': '<y_or_n>',
+	  'type': 'yn'}),
+	('persistent-amount',
+	 {'default': 0,
+	  'help': 'Number of backlogs of saved-stats',
+	  'metavar': '<persistent-amt>',
+	  'type': 'int'}),
 
 )
 
