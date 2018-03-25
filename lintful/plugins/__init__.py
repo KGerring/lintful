@@ -28,6 +28,15 @@ from . import guireporter
 #self.stats = _merge_stats(all_stats)
 #self._parallel_task
 #l.set_current_module
+#self._external_opts = options
+#self.options = options + PyLinter.make_options()
+#'group'self.option_groups = option_groups + PyLinter.option_groups
+
+#self.load_provider_defaults()
+
+#register_options_provider
+#cb_set_provider_option
+#add_option_group
 
 
 

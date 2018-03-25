@@ -6,19 +6,195 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = []
+__all__ = ['OPTION_INFO', 'OPTIONS ']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
 import re # isort:skip
-from pylint.config import ConfigurationMixIn, OptionsManagerMixIn, Option
+import yaml
+from addict import Dict
+from pylint.config import ConfigurationMixIn, OptionsManagerMixIn, Option, VALIDATORS
 import configparser
+import logilab.common.configuration as configuration
+from logilab.common.decorators import monkeypatch
+from pylint.checkers import BaseChecker, BaseTokenChecker
+from _pytest import monkeypatch as patch
+
+from startups.helpers.decorators import ExportsList
+
+__all__ = ExportsList(initlist=__all__, __file__=__file__) # all-decorator: __all__
 
 PYLINT_CONFIG = os.environ.get('PYLINT_CONFIG', None)
 
-_parser = configparser.ConfigParser(inline_comment_prefixes=('#', ';')) #TODO remove
-from startups.helpers.decorators import ExportsList
-__all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
+OPTION_INFO = Dict(dict(
+		ACTIONS=Option.ACTIONS,
+		STORE_ACTIONS=Option.STORE_ACTIONS,
+		TYPES=Option.TYPES,
+		ATTRS=Option.ATTRS,
+		ATTRIBUTES=Option.ATTRS,
+		VALIDATORS =VALIDATORS))
+
+
+from logilab.common.deprecation import class_moved
+
+
+class LintOption(Option):
+	TYPE_CHECKER = Option.TYPE_CHECKER
+	TYPE_CHECKER['file'] = configuration.file_validator
+	TYPES = Option.TYPES
+	TYPES += ('file',)
+
+
+OPTIONS = (
+	('allow-local-reimport',
+	 {'default': True,
+	  'help': 'Allow a reimport of something within a function or class (to allow moving)',
+	  'metavar': '<y_or_n>',
+	  'type': 'yn'}),
+	('persistent-amount',
+	 {'default': 0,
+	  'help': 'Number of backlogs of saved-stats',
+	  'metavar': '<persistent-amt>',
+	  'type': 'int'}),
+	('prefix-import-graph',
+	 {'default': True,
+	  'help': "Should the imports.dot names be prefixed with the module base-name?",
+	  'metavar': '<y_or_n>',
+	  'type': 'yn',
+	  }),
+	('group-wildcard-imports',
+	 {'default': True,
+	  'help': 'group wildcard imports according to module',
+	  'metavar': '<y_or_n>',
+	  'type': 'yn'}),
+	('message-type', dict(type = 'choice', choices = ('', 'yaml', 'json', 'csv'),
+	                      default = 'json', help = 'Print message to console in this form')),
+	('fix-different-reimport', dict(type = 'yn', default = True, metavar ='<y_or_n>',
+	                                help="Fix import names for when multiple objects are imported with the same name from different modules")),
+	
+	
+)
+
+
+def _all_by_module():
+	items = Dict()
+	ABM ={
+		
+		'logilab.common.ureports.nodes': ['Link', 'List', 'Image', 'Span'],
+		'logilab.common.ureports.html_writer': ['HTMLWriter'],
+		'logilab.common.ureports': ['BaseWriter'],
+		'logilab.common.umessage': ['UMessage'],
+		'logilab.common.tasksqueue': ['Task', 'PrioritizedTasksQueue'],
+		'logilab.common.deprecation': ['deprecated', 'moved', 'class_renamed',
+		                               'class_moved', 'class_deprecated', '_defaultdeprecator',
+		                               'DeprecationManager', 'DeprecationWrapper'],
+		
+		'logilab.common.decorators': ['monkeypatch', ],
+		'logilab.common.configuration': ['merge_options', 'file_validator',
+		                                 'VALIDATORS', 'OptionsManager2ConfigurationAdapter', 'Method', #'INPUT_FUNCTIONS',
+		                                 'ConfigurationMixIn',
+		                                 'Configuration']
+	}
+	from stuf.utils import lazyimport
+	for module, values in ABM.items():
+		for value in values:
+			try:
+				a = lazyimport(module, value)
+				items[value] = a
+			except BaseException:
+				pass
+	return items
+
+def make_option(optstr, _type=None, default=None, _help=None,
+                metavar=None, short_opt = False, **kwargs):
+	"""
+	
+	:param optstr:
+	:param type:
+	:param default:
+	:param help:
+	:param metavar:
+	:param short_opt:
+	:param kwargs:
+	:return:
+	"""
+	if not _help:
+		_help = 'Help for {}'.format(optstr)
+		
+	d = dict(default = default, metavar = metavar, help = _help, type = _type)
+	kwds = kwargs.copy()
+	d.update(kwds)
+	
+	
+	if short_opt is True:
+		d['short'] = optstr[0]
+	elif isinstance(short_opt, str):
+		d['short'] = short_opt[0][:]
+	
+	if not _type and default:
+		if default in (True, False):
+			_type = 'yn'
+		elif isinstance(default, int):
+			_type = 'int'
+		elif isinstance(default, str) and ',' in default:
+			_type = 'csv'
+		else:
+			_type = 'string'
+		d['type'] = _type
+	
+	if _type == 'yn' and not metavar:
+		d['metavar'] = '<y_or_n>'
+		
+	
+	return (optstr, d)
+			
+			
+		
+		
+
+class LintParser(configparser.ConfigParser):
+	_file = None
+	
+	def __init__(self, *args, **kwargs):
+		self._file = kwargs.pop('file', self._file)
+		super(LintParser, self).__init__(*args, **kwargs)
+		self.inline_comment_prefixes = ('#', ';')
+		
+		if self._file and os.path.exists(self._file):
+			self.read([self._file])
+			
+	def write_file(self):
+		assert self._file, 'file doesnt exist!'
+		with open(self._file, 'w') as writer:
+			self.write(writer)
+		return self._file
+	
+	@classmethod
+	def from_file(cls, filename):
+		klass = cls()
+		if os.path.exists(filename):
+			klass.read([filename])
+			klass._file = filename[:]
+		return klass
+		
+
+class Lint(BaseChecker):
+	name = 'lint'
+	priority = 0
+	options = OPTIONS
+	plugins = []
+	rcfile = []
+	option_groups = (('External', "Options External to pylint"))
+
+
+@__all__.add
+def options_by_file(file='options.yaml'):
+	from startups import join
+	import lintful
+	stream = lintful.__loader__.get_data('options.yaml').decode()
+	options = tuple(yaml.safe_load(stream))
+	return options
 
 
 @__all__.add
@@ -56,9 +232,46 @@ def find_lintfulrc():
 	return lintfulrc
 
 
+def clean_option_providers(linter):
+	return sorted(set(linter.options_providers),
+	              key=lambda x: x.priority, reverse=True)
 
 
 
+
+
+
+
+#add_option_group
+#cb_set_provider_option
+#add_optik_option
+#cmdline_parser
+#global_set_option
+#load_command_line_configuration
+#load_configuration
+#load_configuration_from_config
+#load_provider_defaults
+#load_defaults
+#option_groups
+#optik_option
+#options_by_section
+#register_options_provider
+#set_option
+
+def check_file(option, opt, value):
+	"""check a file value
+	return the filepath
+	"""
+	from optparse import OptionValueError
+	if os.path.exists(value):
+		return value
+	msg = "option %s: file %r does not exist"
+	raise OptionValueError(msg % (opt, value))
+
+
+def register(linter):
+	"""required method to auto register this checker """
+	linter.register_checker(Lint(linter))
 
 
 if __name__ == '__main__': print(__file__)

@@ -76,5 +76,49 @@ def checker_messages(linter, enabled_only=False):
 	return results
 
 
+#r'_.*|^ignored_|^unused_'
+####L.config_parser.set('VARIABLES', 'ignored-argument-names', r'_.*|[a-zA-Z]|^ignored_|^unused_')
+
+def self_save_config_parser(linter):
+	with open(linter.config_file, 'w') as fp:
+		linter.cfgfile_parser.write(fp)
+		print('Updated: {!r}'.format(linter.config_file), file = sys.stdout)
+		
+#ResourceWarning
+#FutureWarning
+
+@__all__.add
+def get_all_options(linter):
+	"""
+	Return all the options in all the providers for linter
+
+	"""
+	import optparse
+	from addict import Dict
+	providers = Dict()
+	for provider in linter.options_providers:
+		for opt, optdict in provider.options:
+			action = optdict.get('action', None)
+			if action != 'callback':
+				if optdict is None:
+					try:
+						optdict = provider.get_option_def(opt)
+						attrname = provider.option_attrname(opt)
+						optdict['attrname'] = attrname[:]
+						optdict['opt'] = opt[:]
+						optdict['provider'] = provider.name
+						providers[attrname] = optdict.copy()
+					except optparse.OptionError:
+						pass
+				else:
+					attrname = provider.option_attrname(opt)
+					optdict['attrname'] = attrname[:]
+					optdict['opt'] = opt[:]
+					optdict['provider'] = provider.name
+					providers[attrname] = optdict.copy()
+	return providers
+
+
+
 
 if __name__ == '__main__': print(__file__)

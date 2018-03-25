@@ -10,32 +10,25 @@ from __future__ import absolute_import, unicode_literals # isort:skip
 
 
 
-__all__ = ['OPTIONS']
+__all__ = ['get_dots_on_path', 'expand_files']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
 import re # isort:skip
 
 from startups.helpers.decorators import ExportsList
+from importpy.refactoring.misc import get_dots_on_path
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
-OPTIONS = (
-	('allow-local-reimport',
-	 {'default': True,
-	  'help': 'Allow a reimport of something within a function or class (to allow moving)',
-	  'metavar': '<y_or_n>',
-	  'type': 'yn'}),
-	('persistent-amount',
-	 {'default': 0,
-	  'help': 'Number of backlogs of saved-stats',
-	  'metavar': '<persistent-amt>',
-	  'type': 'int'}),
-
-)
 
 
 @__all__.add
 def get_import_names(node):
+	"""
+	Return the import-names for an astroid-node
+	:param node:
+	:return:
+	"""
 	from pylint.checkers.variables import NamesConsumer
 	to_consume = NamesConsumer(node, 'module')
 	not_consumed = to_consume.to_consume
@@ -43,8 +36,13 @@ def get_import_names(node):
 	return local_names
 
 
-
-
+def expand_files(files, linter):
+	from pylint.utils import expand_modules
+	if not linter:
+		return expand_modules(files, [], [])
+	else:
+		return expand_modules(files, linter.config.black_list, linter.config.black_list_re)
+		
 
 
 

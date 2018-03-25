@@ -43,8 +43,11 @@ __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: 
 def get_graphviz_source(filename, directory=None, format='dot', engine='dot'):
 	from graphviz.files import Source
 	
-	return Source.from_file(filename, directory=directory,
+	src = Source.from_file(filename, directory=directory,
 	                        format=format, engine=engine)
+	src.filename = filename[:-4]
+	return src
+
 
 
 @__all__.add
@@ -59,16 +62,34 @@ def run_dot(outputfile):
 	dot_sourcepath = os.path.join(storedir, dotfile)
 	subprocess.call([renderer_exec, '-T', target,
 	                 dot_sourcepath, '-o', outputfile],
-	                shell=use_shell)
+	                shell=True)
 
 
-
-
-
-
-
-
-
+def reduce_tables(sect):
+	"""
+	Return the table-nodes from the Section
+	:param sect: A `Section` instance
+	:return: A list of `Table` nodes
+	"""
+	import collections
+	
+	node = collections.deque(sect)
+	items = []
+	while node:
+		item = node.popleft()
+		visitname = item._get_visit_name()
+		if visitname == 'table':
+			items.append(item)
+		
+		elif visitname in ('paragraph', 'title', 'text'):
+			pass
+		
+		elif visitname == 'section':
+			node.extend(list(item))
+		else:
+			node.extend(list(item))
+	
+	return items
 
 
 if __name__ == '__main__': print(__file__)
