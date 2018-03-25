@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Unit test package for lintplus."""
+"""Unit test package for lintful."""
 import sys
 import os
 to_insert = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))

@@ -1,4 +1,4 @@
-Welcome to lintplus's documentation!
+Welcome to lintful's documentation!
 ======================================
 
 .. toctree::
