@@ -6,7 +6,7 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['OPTION_INFO', 'OPTIONS ']
+__all__ = ['OPTION_INFO', 'OPTIONS']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
