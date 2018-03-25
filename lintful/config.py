@@ -18,7 +18,7 @@ import configparser
 import logilab.common.configuration as configuration
 from logilab.common.decorators import monkeypatch
 from pylint.checkers import BaseChecker, BaseTokenChecker
-from _pytest import monkeypatch as patch
+#from _pytest import monkeypatch as patch
 
 from startups.helpers.decorators import ExportsList
 
@@ -77,6 +77,21 @@ OPTIONS = (
 )
 
 
+def resolve(module_name, dotted_path):
+	if module_name in sys.modules:
+		mod = sys.modules[module_name]
+	else:
+		mod = __import__(module_name)
+	if dotted_path is None:
+		result = mod
+	else:
+		parts = dotted_path.split('.')
+		result = getattr(mod, parts.pop(0))
+		for p in parts:
+			result = getattr(result, p)
+	return result
+
+
 def _all_by_module():
 	items = Dict()
 	ABM ={
@@ -100,7 +115,7 @@ def _all_by_module():
 	for module, values in ABM.items():
 		for value in values:
 			try:
-				a = lazyimport(module, value)
+				a = resolve(module, value)
 				items[value] = a
 			except BaseException:
 				pass

@@ -20,8 +20,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
-
+sys.path.insert(0, os.path.abspath('..'))       #TODO UNCOMMENT
+print('sys.path inserted {!r} by {!r}'.format(os.path.abspath('..'), __file__), file=sys.stderr)
 import lintplus
 
 # -- General configuration ---------------------------------------------

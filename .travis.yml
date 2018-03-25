@@ -22,8 +22,8 @@ deploy:
   distributions: sdist bdist_wheel
   user: kgerring
   password:
-    secure: ekalb4393
+    secure: Ekalb43931
   on:
     tags: true
-    repo: kgerring/lintplus
+    repo: kgerring/lintful
     python: 3.6

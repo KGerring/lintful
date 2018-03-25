@@ -21,6 +21,18 @@ from . import refactors
 from . import utils
 
 import setup_module
+
+#print('old path for {}'.format(__file__))
+#print(__path__)
+#print()
+#import pkgutil
+#__path__ = pkgutil.extend_path(__path__, __name__)
+#print('new path for {}'.format(__file__))
+#print(__path__)
+#print()
+#
+#__path__.reverse()
+
 all_by_module = {
 	'lintful.base': ['get_linter'],
 	'lintful.config': ['find_lintfulrc', 'PYLINT_CONFIG'],
@@ -37,7 +49,7 @@ all_by_module = {
 }
 
 old_module = sys.modules['lintful']
-module = new_module = setup_module.module('lint_ful', all_by_module =all_by_module)
+#module = new_module = setup_module.module('lint_ful', all_by_module =all_by_module)
 
 
 if __name__ == '__main__':

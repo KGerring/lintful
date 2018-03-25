@@ -11,7 +11,21 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', ]
+requirements = ['Click>=6.0', 'pip==9.0.1',
+ 'bumpversion==0.5.3',
+ 'wheel==0.30.0',
+ 'watchdog==0.8.3',
+ 'flake8==3.5.0',
+ 'tox==2.9.1',
+ 'coverage==4.5.1',
+ 'Sphinx==1.7.0',
+ 'addict',
+ 'astroid',
+ 'logilab',
+ 'pylint',
+ 'regex',
+ 'six',
+ 'yaml']
 
 setup_requirements = [ ]
 
@@ -32,23 +46,18 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    description=""pylint helpers"",
-    entry_points={
-        'console_scripts': [
-            'lintplus=lintplus.cli:main',
-        ],
-    },
+    description="""Helpers/Serializers/reporters etc for pylint""",
     install_requires=requirements,
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='lintplus',
-    name='lintplus',
-    packages=find_packages(include=['lintplus']),
+    keywords='lintful pylint static code flake',
+    name='lintful',
+    packages=find_packages(include=['lintful']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
-    url='https://github.com/kgerring/lintplus',
+    url='https://github.com/kgerring/lintful',
     version='0.1.0',
     zip_safe=False,
 )
