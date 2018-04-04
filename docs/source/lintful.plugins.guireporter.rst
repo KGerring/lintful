@@ -5,3 +5,4 @@ lintful.plugins.guireporter module
     :members:
     :undoc-members:
     :show-inheritance:
+    :private-members:

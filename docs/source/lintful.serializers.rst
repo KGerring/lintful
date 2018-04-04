@@ -5,3 +5,4 @@ lintful.serializers module
     :members:
     :undoc-members:
     :show-inheritance:
+    :private-members:

@@ -6,4 +6,3 @@ lintful.base module
     :undoc-members:
     :show-inheritance:
     :private-members:
-

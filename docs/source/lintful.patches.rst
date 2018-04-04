@@ -1,18 +1,18 @@
-lintful.refactors package
-=========================
+lintful.patches package
+=======================
 
 Submodules
 ----------
 
 .. toctree::
 
-   lintful.refactors.base
-   lintful.refactors.utils
+   lintful.patches.checkers_patch
+   lintful.patches.messages_patch
 
 Module contents
 ---------------
 
-.. automodule:: lintful.refactors
+.. automodule:: lintful.patches
     :members:
     :undoc-members:
     :show-inheritance:

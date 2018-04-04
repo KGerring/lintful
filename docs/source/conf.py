@@ -14,19 +14,22 @@
 #
 import os
 import sys
-sys.path.insert(0, '/Users/kristen/PycharmProjects/proj/lintful')
-
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath("../../"))
+sys.path.insert(0, '/Users/kristen/PycharmProjects/proj/lintful/lintful')
+import lintful
 
 # -- Project information -----------------------------------------------------
 
-project = u'lintful'
-copyright = u'2018, KGerring'
-author = u'KGerring'
+project = 'lintful'
+copyright = '2018, KGerring'
+author = 'KGerring'
 
 # The short X.Y version
-version = u'1.0.1'
+version = '1.0.2'
 # The full version, including alpha/beta/rc tags
-release = u'1.0.1'
+release = '1.0.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -41,14 +44,15 @@ release = u'1.0.1'
 extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.viewcode',
-    'sphinx.ext.mathjax',
+    'sphinx.ext.imgmath',
     'sphinx.ext.coverage',
     'sphinx.ext.todo',
     'sphinx.ext.intersphinx',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
-	'sphinx.ext.inheritance_diagram',
-	'sphinx.ext.graphviz',
+    'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.graphviz',
+	'sphinx.ext.ifconfig',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -68,12 +72,12 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = u'python'
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = []
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -85,7 +89,7 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
-
+#html_theme = "sphinx_rtd_theme"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -138,8 +142,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'lintful.tex', u'lintful Documentation',
-     u'KGerring', 'manual'),
+    (master_doc, 'lintful.tex', 'lintful Documentation',
+     'KGerring', 'manual'),
 ]
 
 
@@ -148,7 +152,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'lintful', u'lintful Documentation',
+    (master_doc, 'lintful', 'lintful Documentation',
      [author], 1)
 ]
 
@@ -159,7 +163,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'lintful', u'lintful Documentation',
+    (master_doc, 'lintful', 'lintful Documentation',
      author, 'lintful', 'One line description of project.',
      'Miscellaneous'),
 ]
@@ -187,7 +191,7 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
-
+autodoc_member_order = 'bysource'
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.

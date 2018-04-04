@@ -5,3 +5,4 @@ lintful.plugins.tk\_gui module
     :members:
     :undoc-members:
     :show-inheritance:
+    :private-members:
