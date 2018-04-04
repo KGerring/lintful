@@ -16,8 +16,9 @@ import os # isort:skip
 import regex # isort:skip
 import re # isort:skip
 
-from startups.helpers.decorators import ExportsList
+from startups.helpers.decorators import ExportsList, return_as
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
 
 @__all__.add
 def meta_config(linter):
@@ -83,9 +84,7 @@ def self_save_config_parser(linter):
 	with open(linter.config_file, 'w') as fp:
 		linter.cfgfile_parser.write(fp)
 		print('Updated: {!r}'.format(linter.config_file), file = sys.stdout)
-		
-#ResourceWarning
-#FutureWarning
+
 
 @__all__.add
 def get_all_options(linter):

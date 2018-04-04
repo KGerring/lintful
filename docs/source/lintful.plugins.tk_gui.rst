@@ -1,5 +1,5 @@
-lintful\.plugins\.tk\_gui module
-================================
+lintful.plugins.tk\_gui module
+==============================
 
 .. automodule:: lintful.plugins.tk_gui
     :members:

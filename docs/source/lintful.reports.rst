@@ -1,5 +1,5 @@
-lintful\.reports module
-=======================
+lintful.reports module
+======================
 
 .. automodule:: lintful.reports
     :members:

@@ -23,7 +23,6 @@ from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
 
-
 class BaseRefactor(BaseChecker):
 	name = 'base'
 	"""
@@ -63,6 +62,12 @@ class AstroidModuleFile(astroid.scoped_nodes.Module):
 	#	#	writer.write(self._get_stream().read())
 	#	return self
 	
+	
+	@classmethod
+	def from_astroid_module(cls, module):
+		""""""
+		
+	
 	@classmethod
 	def from_linter(cls, linter):
 		linter = linter
@@ -75,6 +80,8 @@ class AstroidModuleFile(astroid.scoped_nodes.Module):
 		self._old_file = self.file[:]
 		self.file = newfile[:]
 		return self
+	
+	
 
 
 

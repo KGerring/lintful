@@ -1,7 +1,9 @@
-lintful\.base module
-====================
+lintful.base module
+===================
 
 .. automodule:: lintful.base
     :members:
     :undoc-members:
     :show-inheritance:
+    :private-members:
+

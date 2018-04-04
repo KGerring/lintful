@@ -1,5 +1,5 @@
-lintful\.plugins\.gui module
-============================
+lintful.plugins.gui module
+==========================
 
 .. automodule:: lintful.plugins.gui
     :members:

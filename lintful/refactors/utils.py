@@ -20,6 +20,8 @@ from startups.helpers.decorators import ExportsList
 from importpy.refactoring.misc import get_dots_on_path
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
+#lintful.config.OPTIONS
+#lintful.__loader__.get_data('options.yaml')
 
 
 @__all__.add

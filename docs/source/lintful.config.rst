@@ -1,5 +1,5 @@
-lintful\.config module
-======================
+lintful.config module
+=====================
 
 .. automodule:: lintful.config
     :members:

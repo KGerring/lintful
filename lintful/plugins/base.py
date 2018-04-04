@@ -6,7 +6,7 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = []
+__all__ = ['ReporterMessage', 'Reporter', 'ColorizedTemplate', 'ColorReporter']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -14,7 +14,7 @@ import re # isort:skip
 import pylint.utils
 import pylint.config
 import pylint.lint
-
+import collections
 from pylint.reporters.text import colorize_ansi, ANSI_STYLES, ANSI_COLORS, ANSI_RESET
 from pylint.interfaces import IReporter
 from pylint.reporters.ureports.text_writer import TextWriter
@@ -24,7 +24,7 @@ from startups.helpers.decorators import ExportsList
 from startups.misc import attrgetter
 from startups.core import OrderedSet
 from pylint.utils import _MsgBase, MSG_TYPES
-	
+
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
 CHECKER_IDS = (('00', 'master'),
@@ -46,6 +46,9 @@ CHECKER_IDS = (('00', 'master'),
                ('16', 'python3'),
                ('17', 'refactoring'),
                ('18', 'len'))
+
+
+
 
 
 class ReporterMessage(pylint.utils._MsgBase):
@@ -172,6 +175,7 @@ class Reporter(BaseReporter):
 	__implements__ = IReporter
 	name = "custombase"
 	options = dict(module=set([]))
+	line_format = '{symbol}: {msg} ({fullname})|{abspath}:{line}:{column}'
 	
 	def __init__(self, output=sys.stdout):
 		"""Initializes with `messages`, and a holding container for
@@ -189,8 +193,9 @@ class Reporter(BaseReporter):
 		self.default_template = '{symbol}: {msg} ({fullname})|{abspath}:{line}:{column}'
 		self._template = attrgetter('linter.config.msg_template')(self)
 		if not self._template:
-			self._template = self.default_template[:]
-	
+			self._template = self.line_format[:]
+		
+		self.nodes = collections.defaultdict(set)
 	#if FSTRINGS:
 	#	self.fmt = f'{repr(symbol)}: {repr(msg)} ({fullname})|{abspath}:{line}:{column}'
 	#else:
@@ -239,6 +244,13 @@ class Reporter(BaseReporter):
 			base = base.replace(os.altsep, ".")
 		return base
 	
+	def handle_node(self, msg_info, node):
+		""""""
+		mid = msg_info.symbol or msg_info.msgid
+		scope = getattr(msg_info, 'scope', 'line-based-msg')
+		if scope == 'node-based-msg':
+			self.nodes[mid].add(node)
+	
 	def handle_message(self, msg):
 		"""
 		Correctly convert the msg based on how it is received, add it to `messages` and print to screen.
@@ -273,6 +285,7 @@ class Reporter(BaseReporter):
 		if not template:
 			template = self._template
 		self.writeln(msg.format(template))
+			
 	
 	def on_set_current_module(self, module, filepath = None):
 		"""
@@ -284,8 +297,8 @@ class Reporter(BaseReporter):
 		self.current_module = module
 		self.current_file = filepath
 		self.current_ast = self.get_manager(module)
+		self._template = self.linter.config.msg_template or self.line_format
 		
-	
 	def _display(self, layout):
 		print(file=self.out)
 		TextWriter().format(layout, self.out)
@@ -309,6 +322,7 @@ class Reporter(BaseReporter):
 		#persistent-amount
 		linter = self.linter
 		print('closed')
+		
 		
 class ColorizedTemplate(object):
 	"""A template class to get the ansi-codes to colorize messages to stdout"""
@@ -366,11 +380,11 @@ class ColorizedTemplate(object):
 class ColorReporter(Reporter):
 	name = "colored"
 	by_type = False
-	DEFAULT_COLOR_MAPPING = (('C', (None, 'bold')),
-	                         ('E', ('red', 'bold')),
-	                         ('F', ('red', 'bold, underline')),
+	DEFAULT_COLOR_MAPPING = (('C', ('cyan', None)),
+	                         ('E', ('red', None)),
+	                         ('F', ('red', 'italic, underline')),
 	                         ('I', ('green', None)),
-	                         ('R', ('magenta', 'bold, italic')),
+	                         ('R', ('magenta', 'italic')),
 	                         ('S', ('yellow', 'inverse')),
 	                         ('W', ('blue', None)))
 	
@@ -416,7 +430,7 @@ class ColorReporter(Reporter):
 		return msg
 	
 	
-	def write_message(self, msg, *attrs, template=None):
+	def write_message(self, msg, *attrs, template=None):    # pylint: disable=W0221
 		"""Convenience method to write a formated message with class default template"""
 		if not template:
 			template = self._template
@@ -442,6 +456,15 @@ class ColorReporter(Reporter):
 			mapping = None
 			
 		return cls(color_mapping = mapping)
+
+	
+
+
+#class Serializer(object):
+#	@dispatch_on('obj')
+#	def dump(self, obj):
+#		return obj
+
 
 a ='''
 class PyLinterMixIn:
@@ -562,7 +585,8 @@ class PyLinterMixIn:
 				              confidence)
 		)
 '''
-		
+del a
+
 
 def register(linter):
 	"""Register the reporter classes with the linter."""
@@ -570,8 +594,6 @@ def register(linter):
 	linter.register_reporter(CollectingReporter)
 	linter.register_reporter(ColorReporter)
 	
-	
-#-m-A -o 'dot' -p lintplus
 	
 	
 

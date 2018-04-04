@@ -14,7 +14,7 @@ import re # isort:skip
 from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 import tokenize
-from pylint.checkers.format import TokenWrapper, _column_distance as token_column_distance
+#from pylint.checkers.format import _column_distance as token_column_distance
 
 from pylint.interfaces import ITokenChecker, IAstroidChecker, IRawChecker
 from pylint.checkers import BaseTokenChecker
@@ -264,11 +264,11 @@ def relative_path(path):
 	"""
 	comparepath = os.path.normcase(path)
 	longest = ""
-	for dir in sys.path:
-		dir = os.path.normcase(dir)
-		if comparepath.startswith(dir) and comparepath[len(dir)] == os.sep:
-			if len(dir) > len(longest):
-				longest = dir
+	for _dir in sys.path:
+		_dir = os.path.normcase(_dir)
+		if comparepath.startswith(_dir) and comparepath[len(_dir)] == os.sep:
+			if len(_dir) > len(longest):
+				longest = _dir
 	
 	if longest:
 		base = path[len(longest) + 1:]
@@ -302,6 +302,10 @@ def untokenize_node(tokens, L = None):
 	file_bytes = tokenize.untokenize(tokens).decode()
 	from astroid.builder import AstroidBuilder
 	Builder = AstroidBuilder(astroid.MANAGER)
+	
+
+
+##
 	#Builder.string_build(L.current_name, L.current_file)
 	#_parse
 	

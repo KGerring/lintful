@@ -1,5 +1,5 @@
-lintful\.plugins package
-========================
+lintful.plugins package
+=======================
 
 Submodules
 ----------

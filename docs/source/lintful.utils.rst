@@ -1,5 +1,5 @@
-lintful\.utils module
-=====================
+lintful.utils module
+====================
 
 .. automodule:: lintful.utils
     :members:

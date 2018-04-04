@@ -1,5 +1,5 @@
-lintful\.handlers module
-========================
+lintful.handlers module
+=======================
 
 .. automodule:: lintful.handlers
     :members:

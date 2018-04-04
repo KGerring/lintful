@@ -16,8 +16,10 @@ from . import base
 from . import config
 from . import plugins
 from . import handlers
+from . import patches
 from . import serializers
 from . import refactors
+from . import reports
 from . import utils
 
 import setup_module
@@ -34,7 +36,7 @@ import setup_module
 #__path__.reverse()
 
 all_by_module = {
-	'lintful.base': ['get_linter'],
+	'lintful.base': ['get_linter', '_do_load', 'LinterMixIn'],
 	'lintful.config': ['find_lintfulrc', 'PYLINT_CONFIG'],
 	'lintful.handlers': ['BaseHandler'],
 	'lintful.plugins': ['OPTIONS'],
@@ -49,7 +51,7 @@ all_by_module = {
 }
 
 old_module = sys.modules['lintful']
-#module = new_module = setup_module.module('lint_ful', all_by_module =all_by_module)
+module = new_module = setup_module.module('lint_ful', all_by_module =all_by_module)
 
 
 if __name__ == '__main__':

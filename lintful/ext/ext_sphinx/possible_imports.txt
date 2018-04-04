@@ -1,0 +1,37 @@
+from sphinx.util.template import SphinxRenderer
+
+/Users/kristen/anaconda/lib/python3.6/site-packages/sphinx/cmd/quickstart.py
+
+EXTENSIONS
+DEFAULTS
+
+loader = jinja2.FileSystemLoader(templatedir)
+jinja2.Environment(loader=loader)
+from jinja2.sandbox import SandboxedEnvironment
+
+EXTENSIONS = OrderedDict([
+    ('autodoc', 'automatically insert docstrings from modules'),
+    ('doctest', 'automatically test code snippets in doctest blocks'),
+    ('intersphinx', 'link between Sphinx documentation of different projects'),
+    ('todo', 'write "todo" entries that can be shown or hidden on build'),
+    ('coverage', 'checks for documentation coverage'),
+    ('imgmath', 'include math, rendered as PNG or SVG images'),
+    ('mathjax', 'include math, rendered in the browser by MathJax'),
+    ('ifconfig', 'conditional inclusion of content based on config values'),
+    ('viewcode',
+     'include links to the source code of documented Python objects'),
+    ('githubpages',
+     'create .nojekyll file to publish the document on GitHub pages'),
+])
+
+DEFAULTS = {
+    'path': '.',
+    'sep': False,
+    'dot': '_',
+    'language': None,
+    'suffix': '.rst',
+    'master': 'index',
+    'epub': False,
+    'makefile': True,
+    'batchfile': True,
+}

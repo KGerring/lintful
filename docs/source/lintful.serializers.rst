@@ -1,5 +1,5 @@
-lintful\.serializers module
-===========================
+lintful.serializers module
+==========================
 
 .. automodule:: lintful.serializers
     :members:

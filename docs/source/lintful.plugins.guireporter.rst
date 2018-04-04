@@ -1,5 +1,5 @@
-lintful\.plugins\.guireporter module
-====================================
+lintful.plugins.guireporter module
+==================================
 
 .. automodule:: lintful.plugins.guireporter
     :members:

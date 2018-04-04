@@ -6,7 +6,7 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['OPTION_INFO', 'OPTIONS']
+__all__ = ['OPTION_INFO', 'OPTIONS', 'PYLINT_CONFIG', "Lint"]
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -18,6 +18,8 @@ import configparser
 import logilab.common.configuration as configuration
 from logilab.common.decorators import monkeypatch
 from pylint.checkers import BaseChecker, BaseTokenChecker
+from python_ta.reporters.plain_reporter import ERROR_CHECKS
+from pylint.reporters.ureports.nodes import Section, Table, EvaluationSection
 #from _pytest import monkeypatch as patch
 
 from startups.helpers.decorators import ExportsList
@@ -25,6 +27,11 @@ from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist=__all__, __file__=__file__) # all-decorator: __all__
 
 PYLINT_CONFIG = os.environ.get('PYLINT_CONFIG', None)
+#config.save_results(self.stats, self.file_state.base_name)
+
+
+
+
 
 
 OPTION_INFO = Dict(dict(
@@ -36,7 +43,7 @@ OPTION_INFO = Dict(dict(
 		VALIDATORS =VALIDATORS))
 
 
-from logilab.common.deprecation import class_moved
+#from logilab.common.deprecation import class_moved
 
 
 class LintOption(Option):
@@ -73,8 +80,10 @@ OPTIONS = (
 	('fix-different-reimport', dict(type = 'yn', default = True, metavar ='<y_or_n>',
 	                                help="Fix import names for when multiple objects are imported with the same name from different modules")),
 	
-	
-)
+	)
+
+
+
 
 
 def resolve(module_name, dotted_path):
@@ -194,15 +203,62 @@ class LintParser(configparser.ConfigParser):
 		return klass
 		
 
+###
+
+	
+
 class Lint(BaseChecker):
 	name = 'lint'
 	priority = 0
 	options = OPTIONS
 	plugins = []
 	rcfile = []
-	option_groups = (('External', "Options External to pylint"))
+	option_groups = (('External', "Options External to pylint"),)
+	reports = (('RP6201', 'Evaluation', Lint.evaluation_callback),)
 
+	@staticmethod
+	def evaluation_callback(sect, stats, previous_stats):
+		note, pnote, dnote = None, None, None
+		evaluation = '10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)'
+		
+		if stats['statement'] == 0:
+			return
+		if 'global_note' in stats:
+			note = stats.get('global_note', None)
+		if not note:
+			try:
+				note = eval(evaluation, {}, stats) # pylint: disable=eval-used
+			except Exception as ex: # pylint: disable=broad-except
+				note = 'NA'
+		
+		pnote = previous_stats.get('global_note', None)
+		
+		if not pnote:
+			if previous_stats.get('statement', 0) == 0:
+				pnote = 'NA'
+			else:
+				try:
+					pnote = eval(evaluation, {}, previous_stats)
+				except Exception as ex:
+					pnote = 'NA'
+		
+		if isinstance(note, (int, float)) and isinstance(pnote, (int, float)):
+			dnote = note - pnote
+			
+			dnote = '{:#.2f}'.format(dnote)
+			note = '{:#.2f}'.format(note)
+			pnote = '{:#.2f}'.format(pnote)
+		else:
+			dnote = 'NA'
+		
+		lines = ('stats', 'previous', 'difference') + (note, pnote, dnote)
+		
+		sect.append(Table(children=lines, cols=3, rheaders=1))
+	
+	
+	
 
+#register_report,
 @__all__.add
 def options_by_file(file='options.yaml'):
 	from startups import join

@@ -1,5 +1,5 @@
-lintful\.refactors\.base module
-===============================
+lintful.refactors.base module
+=============================
 
 .. automodule:: lintful.refactors.base
     :members:

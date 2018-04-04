@@ -1,5 +1,5 @@
-lintful\.refactors package
-==========================
+lintful.refactors package
+=========================
 
 Submodules
 ----------
