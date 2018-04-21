@@ -16,6 +16,7 @@ from . import base
 from . import config
 from . import plugins
 from . import handlers
+from . import interfaces
 from . import patches
 from . import serializers
 from . import refactors
@@ -23,6 +24,10 @@ from . import reports
 from . import utils
 
 import setup_module
+
+TODO = ["~/.cache", '~/.config', "startups.CACHE"]
+
+
 
 #print('old path for {}'.format(__file__))
 #print(__path__)
@@ -36,19 +41,25 @@ import setup_module
 #__path__.reverse()
 
 all_by_module = {
-	'lintful.base': ['get_linter', '_do_load', 'LinterMixIn'],
-	'lintful.config': ['find_lintfulrc', 'PYLINT_CONFIG'],
-	'lintful.handlers': ['BaseHandler'],
-	'lintful.plugins': ['OPTIONS'],
+	'lintful.base': set(['get_linter', '_do_load', 'LinterMixIn']),
+	'lintful.config': {'find_lintfulrc', 'PYLINT_CONFIG'},
+	'lintful.handlers': {'BaseHandler'},
+	'lintful.config': {'OPTIONS'},
 	
-	'lintful.plugins.base': ['ColorReporter', 'Reporter', 'ReporterMessage'],
-	'lintful.plugins.utils': ['Stats'],
-	'lintful.refactors': ['BaseRefactor', 'BaseRefactoringFile'],
-	'lintful.refactors.utils': ['get_import_names'],
-	'lintful.serializers': ['ExternalDependenciesGraph', 'get_graphviz_source', 'make_tree_defs', 'run_dot', 'string_tree_defs'],
-	'lintful.utils': ['meta_config'],
-	'pylint.lint': ['PyLinter'],
+	'lintful.plugins.base': {'ColorReporter', 'Reporter', 'ReporterMessage'},
+	'lintful.plugins.utils': {'Stats'},
+	'lintful.refactors': {'BaseRefactor', 'BaseRefactoringFile'},
+	'lintful.refactors.utils': {'get_import_names'},
+	'lintful.serializers': {'ExternalDependenciesGraph', 'get_graphviz_source', 'make_tree_defs', 'run_dot', 'string_tree_defs'},
+	
+	
+	'lintful.utils': set(['meta_config']),
+	'pylint.lint': set(['PyLinter']),
+	'importpy.linting.formatting': set(['MessagesSorter']),
 }
+
+for k,v in all_by_module.items():
+	v = set(v)
 
 old_module = sys.modules['lintful']
 module = new_module = setup_module.module('lint_ful', all_by_module =all_by_module)

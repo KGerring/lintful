@@ -10,7 +10,7 @@ from __future__ import absolute_import, unicode_literals # isort:skip
 
 
 
-__all__ = []
+__all__ = ['clean_option_providers']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -18,6 +18,14 @@ import re # isort:skip
 
 from startups.helpers.decorators import ExportsList, return_as
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
+
+def clean_option_providers(linter):
+	#OptionsManagerMixIn
+	new_options_providers = sorted(set(linter.options_providers),
+	                               key=lambda x: x.priority, reverse=True)
+	
+	setattr(linter, 'options_providers', new_options_providers)
 
 
 @__all__.add
@@ -86,10 +94,20 @@ def self_save_config_parser(linter):
 		print('Updated: {!r}'.format(linter.config_file), file = sys.stdout)
 
 
+
+
 @__all__.add
 def get_all_options(linter):
 	"""
-	Return all the options in all the providers for linter
+	Return all the options in all the providers for linter  _load_reporter_class
+	
+	#'lint'options_and_values,prepare_checkers,option_groups,load_defaults,et_checkers
+	
+	list(LL.options_by_section())[3][0]
+	
+	
+	
+	sorted(LL._all_options.values(), key = lambda x: x.priority, reverse = True)
 
 	"""
 	import optparse
@@ -105,7 +123,7 @@ def get_all_options(linter):
 						attrname = provider.option_attrname(opt)
 						optdict['attrname'] = attrname[:]
 						optdict['opt'] = opt[:]
-						optdict['provider'] = provider.name
+						optdict['provider'] = provider.name.upper()
 						providers[attrname] = optdict.copy()
 					except optparse.OptionError:
 						pass
@@ -113,7 +131,7 @@ def get_all_options(linter):
 					attrname = provider.option_attrname(opt)
 					optdict['attrname'] = attrname[:]
 					optdict['opt'] = opt[:]
-					optdict['provider'] = provider.name
+					optdict['provider'] = provider.name.upper()
 					providers[attrname] = optdict.copy()
 	return providers
 

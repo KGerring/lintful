@@ -15,6 +15,19 @@ import re # isort:skip
 
 from pylint.utils import MessagesHandlerMixIn, UNDEFINED
 from pylint.lint import PyLinter
+#from functools import wraps
+
+#config.register_options_provider
+#config.load_provider_defaults
+#config.load_defaults.742
+#utils.category_id (136)
+#utils.register_report,enable_report,register_plugins
+#pylint.interfaces.implements
+#reporters.set_output (62)
+#reporters.initialize (131)
+#pylint.lint.register_reporter      679 8
+#pylint.lint.register_checker      696 33
+#pylint.checkers.refactoring._init  153
 
 
 def patch_messages():
@@ -28,6 +41,9 @@ def patch_messages():
 		self.reporter.handle_node(msg_info, node)
 	
 	MessagesHandlerMixIn.add_message = new_add_message
+
+
+
 
 def patch_add_message():
 	old = getattr(MessagesHandlerMixIn, "add_message")
@@ -45,7 +61,6 @@ def add_messages():
 		self.reporter.handle_node(msg_info, node)
 
 
-from functools import wraps
 
 
 

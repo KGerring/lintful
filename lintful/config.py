@@ -6,7 +6,7 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['OPTION_INFO', 'OPTIONS', 'PYLINT_CONFIG', "Lint"]
+__all__ = ['OPTION_INFO', 'OPTIONS', 'PYLINT_CONFIG','PYLINTHOME', "Lint", 'resolve']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -20,6 +20,7 @@ from logilab.common.decorators import monkeypatch
 from pylint.checkers import BaseChecker, BaseTokenChecker
 from python_ta.reporters.plain_reporter import ERROR_CHECKS
 from pylint.reporters.ureports.nodes import Section, Table, EvaluationSection
+from pathlib import Path
 #from _pytest import monkeypatch as patch
 
 from startups.helpers.decorators import ExportsList
@@ -27,10 +28,57 @@ from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist=__all__, __file__=__file__) # all-decorator: __all__
 
 PYLINT_CONFIG = os.environ.get('PYLINT_CONFIG', None)
+PYLINTHOME = os.environ.get('PYLINTHOME', None)
+PYLINTRC = os.environ.get('PYLINTRC', None)
+
+def make_path():
+	results = Dict()
+	for path in Path(PYLINT_CONFIG).iterdir():
+		results[path.stem] = str(path)
+	return results
+
+PYLINTPATH = make_path()
+
+
+
+#'persistent' = True
+#'score' = True
+#'load_plugins'
+
+
+#'enable'
+#'black_list_re'
+
+
+"""
+
+
+LL.__dict__.get('_dynamic_plugins')
+'_mygroups'
+'_all_options'
+'options_providers'
+'_optik_option_attrs'
+ 'config_file',
+ 'cfgfile_parser',
+ 'cmdline_parser'
+  '_external_opts',
+ 'options',
+ 'option_groups'
+ 'reporter',
+ '_reporter_name',
+ '_reporters',
+ '_checkers'
+ 
+ _msgs_state
+ 
+ 
+"""
+
+
 #config.save_results(self.stats, self.file_state.base_name)
 
 
-
+#os.environ,'PYLINTHOME,PYLINTRC,PYLINT_CONFIG'
 
 
 
@@ -58,6 +106,7 @@ OPTIONS = (
 	 {'default': True,
 	  'help': 'Allow a reimport of something within a function or class (to allow moving)',
 	  'metavar': '<y_or_n>',
+	  #'level': 1,
 	  'type': 'yn'}),
 	('persistent-amount',
 	 {'default': 0,
@@ -175,7 +224,9 @@ def make_option(optstr, _type=None, default=None, _help=None,
 			
 			
 		
-		
+#REPORTS,output-format,Reporter
+#REPORTS,reports,yes
+#load-plugins,persistent = yes;ignore-patterns,ignore
 
 class LintParser(configparser.ConfigParser):
 	_file = None
@@ -194,6 +245,14 @@ class LintParser(configparser.ConfigParser):
 			self.write(writer)
 		return self._file
 	
+	
+	def read_file(self, file):
+		with open(file) as reader:
+			pass
+			
+	
+	
+	
 	@classmethod
 	def from_file(cls, filename):
 		klass = cls()
@@ -203,7 +262,7 @@ class LintParser(configparser.ConfigParser):
 		return klass
 		
 
-###
+### TODO msg_template ='{symbol}: {msg} ({fullname})|{path}:{line}:{column}'
 
 	
 
@@ -212,14 +271,56 @@ class Lint(BaseChecker):
 	priority = 0
 	options = OPTIONS
 	plugins = []
-	rcfile = []
+	rcfile = []#'docstyle'
+	#level = 0
 	option_groups = (('External', "Options External to pylint"),)
-	reports = (('RP6201', 'Evaluation', Lint.evaluation_callback),)
+	reports =[]# [('RP6201', 'Evaluation', Lint.evaluation_callback)]
+	EXTENSIONS = [#'pylint.extensions.check_elif.ElseifUsedChecker',
+	              'pylint.extensions.docstyle.DocStringStyleChecker',
+	              #'pylint.extensions.redefined_variable_type.MultipleTypesChecker',
+	             # 'pylint.extensions.comparetozero.CompareToZeroChecker',
+	             # 'pylint.extensions.overlapping_exceptions.OverlappingExceptionsChecker',
+	             # 'pylint.extensions.emptystring.CompareToEmptyStringChecker',
+	             # 'pylint.extensions.bad_builtin.BadBuiltinChecker',
+		
+		
+	              'pylint.extensions.docparams.DocstringParameterChecker',
+	              'pylint.extensions.mccabe.McCabeMethodChecker']
+	
+	to_enable = ('multiple-constructor-doc', 'missing-param-doc', 'too-complex')
+	
+	FIXES = ('bad-docstring-quotes')
+	
+	PLUGIN_MODULES = ('lintful.plugins.base',
+	                  'lintful.config',
+	                  'pylint.extensions.docparams',
+	                  'pylint.extensions.docstyle',
+	                  'pylint.extensions.mccabe',
+	                 )
+	"""
+	'LINT',
+ 'External',
+ 'lintful',
+ 'PARAMETER_DOCUMENTATION']
+	
+	"""
 
-	@staticmethod
-	def evaluation_callback(sect, stats, previous_stats):
+	def __init__(self, linter = None):
+		super().__init__(linter)
+		self.append_reports()
+		
+	
+	def _open(self):
+		"""called before visiting project (i.e set of modules)"""
+		self.open()
+	
+	def evaluation_callback(self, sect, stats, previous_stats):
 		note, pnote, dnote = None, None, None
-		evaluation = '10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)'
+		#if not self.linter.config.evaluation:
+		if self.linter and self.linter.config.evaluation:
+			evaluation = self.linter.config.evaluation
+		else:
+			evaluation = '10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)'
 		
 		if stats['statement'] == 0:
 			return
@@ -250,11 +351,14 @@ class Lint(BaseChecker):
 			pnote = '{:#.2f}'.format(pnote)
 		else:
 			dnote = 'NA'
+			note = '{:#.2f}'.format(note)
 		
 		lines = ('stats', 'previous', 'difference') + (note, pnote, dnote)
 		
 		sect.append(Table(children=lines, cols=3, rheaders=1))
 	
+	def append_reports(self):
+		self.reports.append(('RP6201', 'Evaluation', self.evaluation_callback))
 	
 	
 
@@ -302,10 +406,6 @@ def find_lintfulrc():
 			lintfulrc = None
 	return lintfulrc
 
-
-def clean_option_providers(linter):
-	return sorted(set(linter.options_providers),
-	              key=lambda x: x.priority, reverse=True)
 
 
 

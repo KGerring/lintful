@@ -9,7 +9,7 @@
 """
 
 from __future__ import absolute_import, unicode_literals # isort:skip
-#__all__ = [] 
+__all__ = ['patch_checkers', 'patch_messages', 'conditional_patches', 'other_patches', '_patch_all']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -17,6 +17,10 @@ import re # isort:skip
 
 from .checkers_patch import patch_checkers
 from .messages_patch import patch_messages
+from . import conditional_patches
+
+
+import python_ta.patches as other_patches
 
 def _patch_all():
 	"""Execute all patches defined in this module."""

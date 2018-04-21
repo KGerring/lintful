@@ -39,8 +39,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
+     
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
@@ -58,6 +57,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/kgerring/lintful',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False,
 )

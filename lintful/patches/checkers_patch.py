@@ -10,7 +10,7 @@ from __future__ import absolute_import, unicode_literals # isort:skip
 __all__ = []
 import sys # isort:skip
 import os # isort:skip
-from pylint.checkers.imports import ImportsChecker, _dependencies_graph, _make_graph
+from pylint.checkers.imports import ImportsChecker, _dependencies_graph, _make_graph, _get_first_import
 
 
 def patch_checkers():
@@ -48,9 +48,22 @@ def _override_check_reimport():
 	
 	#IC._check_reimport = new_check_reimport
 	
-def _override_report_dependencies_graph():
+
+
+#TODO order of loading checkers?
+#todo when called?
+"""
+for checker in self.report_order():
+            for reportid, r_title, r_cb in self._reports[checker]:"""
 	
-	old_report_dependencies_graph = ImportsChecker._report_dependencies_graph
+def _override_report_dependencies_graph(instance = None):   #'prefix-import-graph'
+	if not instance:
+		old_report_dependencies_graph = ImportsChecker._report_dependencies_graph
+	else:
+		old_report_dependencies_graph = getattr(instance,
+		                                        '_report_dependencies_graph', ImportsChecker._report_dependencies_graph)
+	
+	#old_report_dependencies_graph = ImportsChecker._report_dependencies_graph
 	
 	def new_report_dependencies_graph(self, sect, _, _dummy):
 		dep_info = self.stats['dependencies']
@@ -78,7 +91,10 @@ def _override_report_dependencies_graph():
 			_make_graph(filename, self._internal_dependencies_info(),
 			            sect, 'internal ')
 			
-	ImportsChecker._report_dependencies_graph = new_report_dependencies_graph
+	if instance:
+		setattr(instance, '_report_dependencies_graph', new_report_dependencies_graph)
+	else:
+		ImportsChecker._report_dependencies_graph = new_report_dependencies_graph
 		
 		
 		
@@ -92,6 +108,11 @@ def _override_make_graph():
 		
 #config.load_results(self.file_state.base_name)
 #self.reporter.on_close(self.stats, previous_stats)
+
+
+
+
+
 
 def _get_pdata_path(base_name, recurs):
 	base_name = base_name.replace(os.sep, '_')

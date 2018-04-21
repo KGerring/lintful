@@ -34,6 +34,8 @@ RCFILE = os.environ.get("PYLINTRC")
 #from dictdiffer.utils import PathLimit
 
 
+
+
 class LinterMixIn(object):
 	""""""
 	
@@ -156,9 +158,6 @@ class LinterMixIn(object):
 				              confidence)
 		)
 	
-	
-
-
 def _do_load(linter):
 	"""
 	Workaround if the patched pylint.lint doesn't exist (i.e No PyLinterMixIn class).
@@ -193,6 +192,10 @@ def get_linter(rcfile = RCFILE):
 		
 	return linter
 	
+
+
+
+
 
 
 if __name__ == '__main__': print(__file__)

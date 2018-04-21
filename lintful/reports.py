@@ -7,7 +7,7 @@
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
 
-__all__ = ['ReportWriter', 'JSONWriter', 'HTMLWriter', 'reduce_sections']
+__all__ = ['ReportWriter', 'JSONWriter', 'HTMLWriter', 'reduce_sections', 'from_dot']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -28,6 +28,29 @@ from pygraphviz.agraph import AGraph
 from networkx import DiGraph
 #from startups.helpers.decorators import ExportsList
 #__all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
+
+
+def from_dot(filename, strict = True, directed = True, string = None):
+	"""
+	
+	:param filename:
+	:param strict:
+	:param directed:
+	:param string:
+	:return:
+	"""
+	
+	A = AGraph(directed = directed, strict = strict)
+	with open(filename) as reader:
+		data = reader.read()
+	A.from_string(data)
+	return A
+	#layout
+	
+	#from_string
+
+
 
 
 def nx_to_json_graph(digraph, inline = True):
@@ -91,19 +114,6 @@ def get_evaluation(linter):  #TODO add to linter
 			['stats', 'previous_stats', 'difference'],
 			(note, pnote, dnote)))
 	return {"evaluation": results}
-
-
-	
-	
-	
-	
-	
-		
-	
-	
-	
-	
-	
 
 
 def reduce_sections(sect):

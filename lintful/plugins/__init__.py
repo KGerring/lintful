@@ -19,6 +19,7 @@ from . import base
 from . import gui
 from . import guireporter
 from . import tk_gui
+from . import tools
 from . import utils
 
 #from startups.helpers.decorators import ExportsList

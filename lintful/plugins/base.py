@@ -23,9 +23,25 @@ from pylint.reporters import BaseReporter, CollectingReporter
 from startups.helpers.decorators import ExportsList
 from startups.misc import attrgetter
 from startups.core import OrderedSet
-from pylint.utils import _MsgBase, MSG_TYPES
+from pylint.utils import _MsgBase, MSG_TYPES, Message, UNDEFINED
 
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
+
+
+class cached_property(object):
+	def __init__(self, func):
+		self.func = func
+	
+	#for attr in ('__name__', '__module__', '__doc__'):
+	#    setattr(self, attr, getattr(func, attr, None))
+	
+	def __get__(self, obj, cls=None):
+		if obj is None:
+			return self
+		value = self.func(obj)
+		object.__setattr__(obj, self.func.__name__, value)
+		#obj.__dict__[self.func.__name__] = value = self.func(obj)
+		return value
 
 CHECKER_IDS = (('00', 'master'),
                ('01', 'basic'),
@@ -45,23 +61,208 @@ CHECKER_IDS = (('00', 'master'),
                ('15', 'stdlib'),
                ('16', 'python3'),
                ('17', 'refactoring'),
-               ('18', 'len'))
+               ('18', 'len'),
+               ('90', 'parameter_documentation'),
+               
+               )
+CHECKER_ID_EXCEPTIONS = (
+	('docstyle', ('C0199', 'C0198', 'bad-docstring-quotes', 'docstring-first-line-empty'), '01'),
+	('mccabe'  ,('R1260', 'too-complex'), '12'),
+
+                          )
+CODE_ATTRIBUTES = ('co_argcount',
+                   'co_kwonlyargcount',
+                   'co_nlocals',
+                   'co_stacksize',
+                   'co_flags',
+                   'co_code',
+                   'co_consts',
+                   'co_names',
+                   'co_varnames',
+                   'co_filename',
+                   'co_name',
+                   'co_firstlineno',
+                   'co_lnotab',
+                   'co_freevars',
+                   'co_cellvars')
+
+class CodeTuple(collections.namedtuple('code', CODE_ATTRIBUTES)):
+	"""
+	Represent a `code` object as a namedtuple.
+	"""
+	
+	def __new__(cls, co_argcount=0, co_kwonlyargcount=0, co_nlocals=0,
+	            co_stacksize=0, co_flags=0, co_code=b'',
+	            co_consts=(), co_names=(),
+	            co_varnames=(), co_filename='', co_name='',
+	            co_firstlineno=0, co_lnotab=b'',
+	            co_freevars=(), co_cellvars=()):
+		"""Create new instance of CodeTuple() with default values"""
+		from builtins import property as _property, tuple as _tuple
+		
+		return _tuple.__new__(cls, (
+			co_argcount, co_kwonlyargcount, co_nlocals, co_stacksize, co_flags, co_code, co_consts, co_names, co_varnames,
+			co_filename, co_name, co_firstlineno, co_lnotab, co_freevars, co_cellvars))
+
+
+MESSAGE_ATTRIBUTES = ('msg_id',
+ 'symbol',
+ 'msg',
+ 'C',
+ 'category',
+ 'confidence',
+ 'abspath',
+ 'path',
+ 'module',
+ 'obj',
+ 'line',
+ 'column',
+ 'checker',
+ 'fullname',
+ 'defn')
 
 
 
 
 
+
+
+
+
+
+import dataclasses
+field = dataclasses.field
+
+#dataclasses.make_dataclass('Message', MESSAGE_ATTRIBUTES, order=True, hash = True)
+
+FIELD = dataclasses.field(default = '', init = True, repr = True, hash = True, compare = True, metadata = {})
+FIELD.type = str
+
+NONE_FIELD = dataclasses.field(default=None, hash=True, metadata={})
+NONE_FIELD.type = str
+
+
+from pylint.interfaces import CONFIDENCE_LEVELS, Confidence
+
+
+@dataclasses.dataclass
+class MessageData:
+	
+	msg_id: str     = field(default ='E0001',       hash=True, metadata = {})
+	symbol: str     = field(default ='syntax-error',hash=True, metadata = {})
+	msg: str        = field(default ='%s',          hash=True, metadata = {})
+	C: str          = field(default ='E',           hash=True, metadata = {})
+	category: str   = field(default ='error',       hash=True, metadata = {"MSG_TYPES": MSG_TYPES})
+	confidence: tuple = field(default =('UNDEFINED',),     hash=True,)# metadata = dict(CONFIDENCE_LEVELS =CONFIDENCE_LEVELS))
+	abspath: str    = field(default = '',           hash=True, metadata = {})
+	path: str       = field(default='',             hash=True, metadata = {})
+	module: str     = field(default='',             hash=True, metadata = {})
+	obj: str        = field(default='',             hash=True, metadata = {})
+	line: int       = field(default = 1,            hash=True, metadata = {})
+	column:int      = field(default = 0,            hash=True, metadata = {})
+	#checker: str    = field(default = None, init = False, hash=True, metadata = dict(CHECKER_IDS=CHECKER_IDS))
+	#fullname: str   = field(default = None, init = False,hash=True, metadata = None)
+	#defn: str       = field(default = None, init=False,hash=True, metadata = {})
+	
+	
+	def set_linter(self, linter):
+		if hasattr(linter, '_display'):
+			setattr(self, 'linter', linter.linter)
+		else:
+			setattr(self, "linter",linter)
+	
+	#@property
+	#def _fields(self):
+	#	return tuple(self.__dataclass_fields__)
+	#
+	#def _asdict(self):
+	#	from collections import OrderedDict
+	#	d = OrderedDict(zip(self._fields, self))
+	#
+	@cached_property
+	def fullname(self):
+		name = '.'.join([self.module, self.obj]).strip('.')
+		self.__dataclass_fields__['fullname'] = FIELD
+		self.__dataclass_fields__['fullname'].name = 'fullname'
+		return name
+	
+	@cached_property
+	def checker(self):
+		self.__dataclass_fields__['checker'] = FIELD
+		self.__dataclass_fields__['checker'].name = "checker"
+		
+		msg_id = self.msg_id or self.symbol
+		if not hasattr(self, 'linter'):
+			key = self.msg_id[1:3]
+			return dict(CHECKER_IDS).get(key, '')
+		else:
+			name = self.linter.msgs_store.check_message_id(msg_id).checker.name
+			#self.__dict__['checker'] = name
+			return name
+	
+	
+	@cached_property
+	def defn(self):
+		self.__dataclass_fields__['defn'] = FIELD
+		self.__dataclass_fields__['defn'].name = 'defn'
+		msg_id = self.msg_id or self.symbol
+		if not hasattr(self, 'linter'):
+			return '%s'
+		else:
+			name = self.linter.msgs_store.check_message_id(msg_id).msg
+			return name
+
+
+class ReportMessage(MessageData):
+	pass
+
+
+class _ReporterMessage(collections.namedtuple('message', MESSAGE_ATTRIBUTES)):
+	
+	def __new__(cls, msg_id='E0001', symbol='syntax-error', msg='%s', C='E', category='error',
+	            confidence='UNDEFINED', abspath='', path='', module='', obj='', line=1,
+	            column=0, checker='master', fullname='', defn='%s'):
+		from builtins import tuple as _tuple
+		
+		return _tuple.__new__(cls, (
+		msg_id, symbol, msg, C, category, confidence, abspath, path,
+		module, obj, line, column, checker, fullname, defn))
+		
+		
+	
 class ReporterMessage(pylint.utils._MsgBase):
-	def __new__(cls, msg_id, symbol, location, msg, confidence, linter=None):
-		linter = linter
+	
+	#def __new__(cls, msg_id ='E0001', symbol = '', location =('','','','',1,0), msg='', confidence='', linter=None):
+	
+	def __new__(cls, *args, **kwargs):
+		if len(args) == 5:
+			msg_id, symbol, location, msg, confidence = args
+			self = _MsgBase.__new__(
+					cls, msg_id, symbol, msg, msg_id[0], MSG_TYPES[msg_id[0]],
+					confidence, *location)
+			
+		#elif len(args) == 12:
+		else:
+			self = _MsgBase.__new__(cls, *args)
+			
+		if kwargs:
+			self.__dict__.update(kwargs)
+		
+		return self
+			
+	
+	def _new_(cls, msg_id, symbol, location, msg, confidence, **kwargs):
+		
+		linter = kwargs.pop('linter', None)
 		self = _MsgBase.__new__(
 				cls, msg_id, symbol, msg, msg_id[0], MSG_TYPES[msg_id[0]],
 				confidence, *location)
-		if linter:
-			if hasattr(linter, '_display'):
-				self.linter = linter.linter
-			else:
-				self.linter = linter
+		self.set_linter(linter)
+		#if linter:
+		#	if hasattr(linter, '_display'):
+		#		self.linter = linter.linter
+		#	else:
+		#		self.linter = linter
 		return self
 	
 	@classmethod
@@ -74,15 +275,20 @@ class ReporterMessage(pylint.utils._MsgBase):
 		return cls(msg_id, symbol, location, msg, confidence)
 	
 	@classmethod
+	def from_tuple(cls, tuple_):
+		return _MsgBase.__new__(cls, *tuple_)
+		
+	@classmethod
 	def from_kwargs(cls, kwargs):
 		from startups.misc import itemgetter
 		
+		linter = kwargs.pop('linter', None)
 		msg_id = kwargs.get('msg_id')
 		symbol = kwargs.get('symbol')
 		msg = kwargs.get('msg')
 		confidence = kwargs.get('confidence')
 		location = itemgetter('abspath', 'path', 'module', 'obj', 'line', 'column')(kwargs)
-		return cls(msg_id, symbol, location, msg, confidence)
+		return cls(msg_id, symbol, location, msg, confidence, linter = linter)
 	
 	def _asdict(self):
 		from collections import OrderedDict
@@ -104,41 +310,45 @@ class ReporterMessage(pylint.utils._MsgBase):
 		ndict = self._asdict()
 		return template.format(**ndict)
 	
-	def set_linter(self, linter):
-		if hasattr(linter, '_display'):
-			self.linter = linter.linter
+	def set_linter(self, linter = None):
+		if linter:
+			if hasattr(linter, '_display'):
+				setattr(self, "linter", linter.linter)
+			else:
+				setattr(self, "linter", linter)
 		else:
-			self.linter = linter
+			setattr(self, "linter", None)
+			
 	
-	@property
-	def confidence(self):
+	@cached_property
+	def _confidence(self):
 		return getattr(self[5], 'name', self[5])
 	
-	@property
+	@cached_property
 	def checker(self):
 		msg_id = self.msg_id or self.symbol
-		if not hasattr(self, 'linter'):
+		if not getattr(self, 'linter', None):
 			key = self.msg_id[1:3]
 			return dict(CHECKER_IDS).get(key, '')
 		else:
 			name = self.linter.msgs_store.check_message_id(msg_id).checker.name
 			#self.__dict__['checker'] = name
 			return name
-	
-	@property
+		
+	@cached_property
 	def defn(self):
 		msg_id = self.msg_id or self.symbol
-		if not hasattr(self, 'linter'):
-			return ''
+		if not getattr(self, 'linter', None):
+			return '%s'
 		else:
 			name = self.linter.msgs_store.check_message_id(msg_id).msg
 			return name
-	
-	@property
+		
+	@cached_property
 	def fullname(self):
 		return '.'.join([self.module, self.obj]).strip('.')
-	
-	@property
+		
+	@cached_property
 	def srcline(self):
 		from linecache import getline
 		
@@ -158,12 +368,37 @@ class ReporterMessage(pylint.utils._MsgBase):
 	
 	def __repr__(self):
 		'Return a nicely formatted representation string'
+		
+		ddict = self._asdict()
+		_confidence = ddict.get('confidence','UNDEFINED')
+		if hasattr(_confidence, 'name'):
+			ddict['confidence'] = getattr(_confidence, 'name', 'UNDEFINED')
+		
 		if self.fullname:
-			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, fullname={fullname!r}, C={C!r}, confidence={confidence.name!r}, abspath={abspath!r}, line={line!r}, column={column!r}, checker={checker!r})'''
+			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, fullname={fullname!r}, C={C!r}, confidence={confidence!r}, abspath={abspath!r}, line={line!r}, column={column!r}, checker={checker!r})'''
 		else:
-			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, C={C!r}, category={category!r}, confidence={confidence.name!r}, abspath={abspath!r}, path={path!r}, module={module!r}, obj={obj!r}, line={line!r}, column={column!r}, checker={checker!r}, fullname={fullname!r})'''
+			
+			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, C={C!r}, category={category!r}, confidence={confidence!r}, abspath={abspath!r}, path={path!r}, module={module!r}, obj={obj!r}, line={line!r}, column={column!r}, checker={checker!r}, fullname={fullname!r})'''
 		
 		return self.__class__.__name__ + template.format_map(self._asdict())
+	
+	def __getstate__(self):
+		return self._asdict()
+	
+	def __setstate__(self, state):
+		return self.from_kwargs(state)
+		
+	def __getnewargs_ex__(self):
+		asdict = self._asdict()
+		checker = asdict.pop('checker',None)
+		fullname = asdict.pop('fullname', None)
+		defn = asdict.pop('defn', None)
+		
+		keywords = dict(checker =checker, fullname =fullname, defn =defn)
+		positional = tuple(self)
+		
+		return (positional, keywords)
+		
 
 
 class Reporter(BaseReporter):
@@ -260,8 +495,12 @@ class Reporter(BaseReporter):
 		from pylint import utils
 		if isinstance(msg, (utils.Message, utils._MsgBase)):
 			msg = ReporterMessage.from_message(msg)
+			
 		elif isinstance(msg, tuple):
-			msg = ReporterMessage(*msg)
+			if len(msg) == 12:
+				msg = ReporterMessage.from_tuple(msg)
+			else:
+				msg = ReporterMessage(*msg)
 		
 		elif isinstance(msg, dict):
 			msg = ReporterMessage.from_kwargs(msg)
