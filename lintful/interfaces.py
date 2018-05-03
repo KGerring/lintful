@@ -66,7 +66,7 @@ o You assert that your object implement the interfaces.
 		
 """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['SITE_MANAGER',"INSTANCES","REGISTRY"]
+__all__ = ['SITE_MANAGER',"INSTANCES","REGISTRY", 'REGISTERED_UTILITIES', 'INTERFACES', 'register_utility']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -81,7 +81,7 @@ import pylint.interfaces
 from pylint.interfaces import implements as pylint_implements, IReporter
 import sphinx.ext.inheritance_diagram
 from sphinx.ext.inheritance_diagram import import_classes
-
+from startups.misc import attrgetter
 
 import zope.component
 import zope.event
@@ -93,7 +93,8 @@ from zope.component import (adapter,
                             adapter_hook,
                             adaptedBy,
                             getAdapter,
-                            queryAdapter,)
+                            queryAdapter,
+                            getAllUtilitiesRegisteredFor)
 
 from zope.interface import (
     declarations,
@@ -179,6 +180,13 @@ def verifyClass(iface, candidate, tentative=0):
 	
 	if not tentative and not tester(candidate):
 		return False
+	
+	
+def register_utility(klass, *interfaces):
+	classImplements(klass, *interfaces)
+	zope.component.provideUtility(klass, interfaces[0], klass.__name__)
+	return GSM.utilities.names([], interfaces[0])
+
 
 #__conform__
 
@@ -197,7 +205,7 @@ class PyLintInterface(Interface):
 	def is_implemented_by(instance):
 		"classmethod for pylint.interfaces.implements"
 
-classImplements(resolve('pylint.interfaces', 'Interface'), PyLintInterface)
+class_implements(resolve('pylint.interfaces', 'Interface'), PyLintInterface)
 
 
 class IBaseReporter(Interface):
@@ -239,9 +247,12 @@ class IBaseReporter(Interface):
 	def on_close(stats, previous_stats):
 		"""Hook called when a module finished analyzing."""
 
-classImplements(resolve('pylint.reporters', 'BaseReporter'))
+
+class_implements(resolve('pylint.reporters', 'BaseReporter'), IBaseReporter)
 
 
+class IDict(Interface):
+	""""""
 
 class IMessage(Interface):
 	"""Interface for Messages"""
@@ -274,13 +285,28 @@ class MessageComp(TupleComp):
 
 GSM.registerAdapter(MessageComp, (IMessage,), IMessageComp, '')
 REGISTRY.register([IMessage], IMessageComp, '', MessageComp)
+
+classImplements(resolve('lintful.plugins.base', 'ReporterMessage'), IMessage)
+classImplements(resolve('pylint.utils', '_MsgBase'), IMessage)
+
+GSM.registerUtility(resolve('pylint.utils', '_MsgBase'), IMessage, '')
+GSM.registerUtility(resolve('lintful.plugins.base', 'ReporterMessage'), IMessage, '')
+
+
+
+#I.GSM.getAllUtilitiesRegisteredFor
+
+
+
 	
+REGISTERED_UTILITIES = sorted(GSM.registeredUtilities(), key=attrgetter('provided.__identifier__'))
 
-class_implements(resolve('lintful.plugins.base', 'ReporterMessage'), IMessage)
-class_implements(resolve('pylint.utils', '_MsgBase'), IMessage)
 
+INTERFACES = list(GSM._utility_registrations_cache._cache)
 
 #print(list(ReporterMessage.__implemented__))
+
+#GSM.utilities.registered([], I.IMessage)
 
 
 

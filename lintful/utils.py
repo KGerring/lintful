@@ -17,6 +17,7 @@ import regex # isort:skip
 import re # isort:skip
 
 from startups.helpers.decorators import ExportsList, return_as
+from lintful.base import get_linter
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
 
@@ -34,6 +35,12 @@ def meta_config(linter):
 	Return the config as `optparse.Values` (linter.config) for all checkers
 	:param linter:
 	:return:
+	
+	>>> meta = meta_config(get_linter())
+	>>> jobs = meta.jobs
+	>>> jobs in list(range(1, 5))
+	True
+	
 	"""
 	from optparse import Values
 	
@@ -46,11 +53,30 @@ def meta_config(linter):
 
 @__all__.add
 def enabled_messages(linter):
+	"""
+	
+	:param linter:
+	:return:
+	
+	>>> enabled = enabled_messages(get_linter())
+	>>> 'fatal' in enabled
+	True
+	"""
 	return set(filter(linter.is_message_enabled, linter.msgs_store._messages.copy()))
 
 
 @__all__.add
 def disabled_messages(linter):
+	"""
+	
+	:param linter:
+	:return:
+	
+	>>> disabled = disabled_messages(get_linter())
+	>>> 'delslice-method' in disabled
+	True
+	"""
+	
 	from itertools import filterfalse
 	return set(filterfalse(linter.is_message_enabled, linter.msgs_store._messages.copy()))
 
@@ -71,6 +97,17 @@ def disabled_reports(linter):
 
 @__all__.add
 def checker_messages(linter, enabled_only=False):
+	"""
+	
+	:param linter:
+	:param enabled_only:
+	:return:
+	
+	>>> messages = checker_messages(get_linter())
+	>>> 'master' in messages.keys()
+	True
+	
+	"""
 	from collections import OrderedDict
 	
 	results = OrderedDict()
@@ -87,8 +124,13 @@ def checker_messages(linter, enabled_only=False):
 
 #r'_.*|^ignored_|^unused_'
 ####L.config_parser.set('VARIABLES', 'ignored-argument-names', r'_.*|[a-zA-Z]|^ignored_|^unused_')
-
+@__all__.add
 def self_save_config_parser(linter):
+	"""
+	
+	:param linter:
+	:return:
+	"""
 	with open(linter.config_file, 'w') as fp:
 		linter.cfgfile_parser.write(fp)
 		print('Updated: {!r}'.format(linter.config_file), file = sys.stdout)

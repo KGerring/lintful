@@ -40,6 +40,22 @@ TODO = ["~/.cache", '~/.config', "startups.CACHE"]
 #
 #__path__.reverse()
 
+def resolve(module_name, dotted_path):
+	"""use instead of stuf.utils.lazyimport"""
+	if module_name in sys.modules:
+		mod = sys.modules[module_name]
+	else:
+		mod = __import__(module_name)
+	if dotted_path is None:
+		result = mod
+	else:
+		parts = dotted_path.split('.')
+		result = getattr(mod, parts.pop(0))
+		for p in parts:
+			result = getattr(result, p)
+	return result
+
+
 all_by_module = {
 	'lintful.base': set(['get_linter', '_do_load', 'LinterMixIn']),
 	'lintful.config': {'find_lintfulrc', 'PYLINT_CONFIG'},

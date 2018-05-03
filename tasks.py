@@ -11,7 +11,7 @@ def clean():
     """clean - remove build artifacts."""
     run('rm -rf build/')
     run('rm -rf dist/')
-    run('rm -rf importpy.egg-info')
+    run('rm -rf lintful.egg-info')
     run('find . -name __pycache__ -delete')
     run('find . -name *.pyc -delete')
     run('find . -name *.pyo -delete')
@@ -23,14 +23,14 @@ def clean():
 @task
 def test():
     """test - run the test runner."""
-    run('py.test --flakes --cov-report html --cov importpy tests/', pty=True)
+    run('py.test --flakes --cov-report html --cov lintful tests/', pty=True)
     run('open htmlcov/index.html')
 
 
 @task
 def lint():
     """lint - check style with flake8."""
-    run('flake8 importpy tests')
+    run('flake8 lintful tests')
 
 
 @task(clean)

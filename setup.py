@@ -11,21 +11,22 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=6.0', 'pip==9.0.1',
- 'bumpversion==0.5.3',
- 'wheel==0.30.0',
- 'watchdog==0.8.3',
- 'flake8==3.5.0',
- 'tox==2.9.1',
- 'coverage==4.5.1',
- 'Sphinx==1.7.0',
- 'addict',
- 'astroid',
- 'logilab',
- 'pylint',
- 'regex',
- 'six',
- 'yaml']
+requirements = ['Click>=6.0',
+                'pip==9.0.1',
+                'bumpversion==0.5.3',
+                'wheel==0.30.0',
+                'watchdog==0.8.3',
+                'flake8==3.5.0',
+                'tox==2.9.1',
+                'coverage==4.5.1',
+                'Sphinx==1.7.2',
+                'addict',
+                'astroid',
+                'logilab',
+                'pylint',
+                'regex',
+                'six',
+                'yaml']
 
 setup_requirements = [ ]
 
@@ -50,7 +51,7 @@ setup(
     license="GNU General Public License v3",
     long_description=readme + '\n\n' + history,
     include_package_data=True,
-    keywords='lintful pylint static code flake',
+    keywords='lintful pylint static code flake lint',
     name='lintful',
     packages=find_packages(include=['lintful']),
     setup_requires=setup_requirements,

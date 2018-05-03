@@ -6,7 +6,7 @@
 # from startups import *
 """ """
 from __future__ import absolute_import, unicode_literals # isort:skip
-__all__ = ['OPTION_INFO', 'OPTIONS', 'PYLINT_CONFIG','PYLINTHOME', "Lint", 'resolve']
+__all__ = ['OPTION_INFO', 'OPTIONS', 'PYLINT_CONFIG','PYLINTHOME', "Lint", 'resolve', 'PYLINTPATH']
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -135,7 +135,7 @@ OPTIONS = (
 
 
 
-def resolve(module_name, dotted_path):
+def resolve(module_name, dotted_path = None):
 	if module_name in sys.modules:
 		mod = sys.modules[module_name]
 	else:
@@ -169,7 +169,7 @@ def _all_by_module():
 		                                 'ConfigurationMixIn',
 		                                 'Configuration']
 	}
-	from stuf.utils import lazyimport
+	from lintful import resolve
 	for module, values in ABM.items():
 		for value in values:
 			try:
@@ -178,6 +178,8 @@ def _all_by_module():
 			except BaseException:
 				pass
 	return items
+
+del _all_by_module
 
 def make_option(optstr, _type=None, default=None, _help=None,
                 metavar=None, short_opt = False, **kwargs):
@@ -240,6 +242,11 @@ class LintParser(configparser.ConfigParser):
 			self.read([self._file])
 			
 	def write_file(self):
+		"""
+		
+		:return:
+		"""
+		
 		assert self._file, 'file doesnt exist!'
 		with open(self._file, 'w') as writer:
 			self.write(writer)
@@ -360,7 +367,36 @@ class Lint(BaseChecker):
 	def append_reports(self):
 		self.reports.append(('RP6201', 'Evaluation', self.evaluation_callback))
 	
-	
+
+OPS = [('allow-local-reimport',
+        {'default': True, 'help': 'Allow a reimport of something within a function or class (to allow moving)', 'metavar': '<y_or_n>',
+         'type': 'yn'}, True),
+       ('persistent-amount', {'default': 0, 'help': 'Number of backlogs of saved-stats', 'metavar': '<persistent-amt>', 'type': 'int'}, 0),
+       ('prefix-import-graph',
+        {'default': True, 'help': 'Should the imports.dot names be prefixed with the module base-name?', 'metavar': '<y_or_n>',
+         'type': 'yn'}, True),
+       ('group-wildcard-imports',
+        {'default': True, 'help': 'group wildcard imports according to module', 'metavar': '<y_or_n>', 'type': 'yn'}, True),
+       ('message-type',
+        {'choices': ('', 'yaml', 'json', 'csv'), 'default': 'json', 'help': 'Print message to console in this form', 'type': 'choice'},
+        'json'),
+       ('fix-different-reimport',
+        {'default': True, 'help': 'Fix import names for when multiple objects are imported with the same name from different modules',
+         'metavar': '<y_or_n>', 'type': 'yn'}, True)]
+
+
+DIFFS = [
+	        ('change', 'MASTER.load-plugins', ('', 'lintful.plugins.base,lintful.config')),
+	        ('change', 'MASTER.persistent', ('no', 'yes')),
+	         ('change', 'MISCELLANEOUS.notes', ('FIXME,\nXXX,\nTODO', 'FIXME,XXX,TODO,todo,ADD,cat')),
+	         ('change', 'REPORTS.output-format', ('text', 'lintful.plugins.base.ColorReporter')),]
+
+
+
+_DIFFS = [('output-format', 'lintful.plugins.base.ColorReporter'),
+          ('ignores', ('/MESSAGES CONTROL/disable', '/MESSAGES CONTROL/enable')),
+          ]
+
 
 #register_report,
 @__all__.add

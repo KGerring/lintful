@@ -67,42 +67,7 @@ CHECKER_IDS = (('00', 'master'),
                )
 CHECKER_ID_EXCEPTIONS = (
 	('docstyle', ('C0199', 'C0198', 'bad-docstring-quotes', 'docstring-first-line-empty'), '01'),
-	('mccabe'  ,('R1260', 'too-complex'), '12'),
-
-                          )
-CODE_ATTRIBUTES = ('co_argcount',
-                   'co_kwonlyargcount',
-                   'co_nlocals',
-                   'co_stacksize',
-                   'co_flags',
-                   'co_code',
-                   'co_consts',
-                   'co_names',
-                   'co_varnames',
-                   'co_filename',
-                   'co_name',
-                   'co_firstlineno',
-                   'co_lnotab',
-                   'co_freevars',
-                   'co_cellvars')
-
-class CodeTuple(collections.namedtuple('code', CODE_ATTRIBUTES)):
-	"""
-	Represent a `code` object as a namedtuple.
-	"""
-	
-	def __new__(cls, co_argcount=0, co_kwonlyargcount=0, co_nlocals=0,
-	            co_stacksize=0, co_flags=0, co_code=b'',
-	            co_consts=(), co_names=(),
-	            co_varnames=(), co_filename='', co_name='',
-	            co_firstlineno=0, co_lnotab=b'',
-	            co_freevars=(), co_cellvars=()):
-		"""Create new instance of CodeTuple() with default values"""
-		from builtins import property as _property, tuple as _tuple
-		
-		return _tuple.__new__(cls, (
-			co_argcount, co_kwonlyargcount, co_nlocals, co_stacksize, co_flags, co_code, co_consts, co_names, co_varnames,
-			co_filename, co_name, co_firstlineno, co_lnotab, co_freevars, co_cellvars))
+	('mccabe'  ,('R1260', 'too-complex'), '12'),)
 
 
 MESSAGE_ATTRIBUTES = ('msg_id',
@@ -146,8 +111,8 @@ from pylint.interfaces import CONFIDENCE_LEVELS, Confidence
 
 
 @dataclasses.dataclass
-class MessageData:
-	
+class MessageData: # pylint: disable=no-member,invalid-name,no-else-return
+	# pylint: disable=no-member
 	msg_id: str     = field(default ='E0001',       hash=True, metadata = {})
 	symbol: str     = field(default ='syntax-error',hash=True, metadata = {})
 	msg: str        = field(default ='%s',          hash=True, metadata = {})
@@ -212,7 +177,7 @@ class MessageData:
 			name = self.linter.msgs_store.check_message_id(msg_id).msg
 			return name
 
-
+# pylint: enable=unused-import
 class ReportMessage(MessageData):
 	pass
 
@@ -235,6 +200,7 @@ class ReporterMessage(pylint.utils._MsgBase):
 	#def __new__(cls, msg_id ='E0001', symbol = '', location =('','','','',1,0), msg='', confidence='', linter=None):
 	
 	def __new__(cls, *args, **kwargs):
+		linter = kwargs.pop('linter', None)
 		if len(args) == 5:
 			msg_id, symbol, location, msg, confidence = args
 			self = _MsgBase.__new__(
@@ -248,22 +214,23 @@ class ReporterMessage(pylint.utils._MsgBase):
 		if kwargs:
 			self.__dict__.update(kwargs)
 		
+		self.set_linter(linter)
 		return self
 			
 	
-	def _new_(cls, msg_id, symbol, location, msg, confidence, **kwargs):
-		
-		linter = kwargs.pop('linter', None)
-		self = _MsgBase.__new__(
-				cls, msg_id, symbol, msg, msg_id[0], MSG_TYPES[msg_id[0]],
-				confidence, *location)
-		self.set_linter(linter)
-		#if linter:
-		#	if hasattr(linter, '_display'):
-		#		self.linter = linter.linter
-		#	else:
-		#		self.linter = linter
-		return self
+	#def _new_(cls, msg_id, symbol, location, msg, confidence, **kwargs):
+	#
+	#	linter = kwargs.pop('linter', None)
+	#	self = _MsgBase.__new__(
+	#			cls, msg_id, symbol, msg, msg_id[0], MSG_TYPES[msg_id[0]],
+	#			confidence, *location)
+	#	self.set_linter(linter)
+	#	#if linter:
+	#	#	if hasattr(linter, '_display'):
+	#	#		self.linter = linter.linter
+	#	#	else:
+	#	#		self.linter = linter
+	#	return self
 	
 	@classmethod
 	def from_message(cls, message):
@@ -375,7 +342,7 @@ class ReporterMessage(pylint.utils._MsgBase):
 			ddict['confidence'] = getattr(_confidence, 'name', 'UNDEFINED')
 		
 		if self.fullname:
-			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, fullname={fullname!r}, C={C!r}, confidence={confidence!r}, abspath={abspath!r}, line={line!r}, column={column!r}, checker={checker!r})'''
+			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, fullname={fullname!r}, C={C!r}, abspath={abspath!r}, line={line!r}, column={column!r}, checker={checker!r})'''
 		else:
 			
 			template = '''(msg_id={msg_id!r}, symbol={symbol!r}, msg={msg!r}, C={C!r}, category={category!r}, confidence={confidence!r}, abspath={abspath!r}, path={path!r}, module={module!r}, obj={obj!r}, line={line!r}, column={column!r}, checker={checker!r}, fullname={fullname!r})'''
@@ -443,7 +410,8 @@ class Reporter(BaseReporter):
 		else:
 			return self.current_module
 	
-	def get_manager(self, current_name = None):
+	@staticmethod
+	def get_manager(current_name = None):
 		from astroid import MANAGER
 		if not current_name:
 			return MANAGER.astroid_cache
@@ -463,11 +431,11 @@ class Reporter(BaseReporter):
 	def relative_path(path):
 		comparepath = os.path.normcase(path)
 		longest = ""
-		for dir in sys.path:
-			dir = os.path.normcase(dir)
-			if comparepath.startswith(dir) and comparepath[len(dir)] == os.sep:
-				if len(dir) > len(longest):
-					longest = dir
+		for _dir in sys.path:
+			_dir = os.path.normcase(_dir)
+			if comparepath.startswith(_dir) and comparepath[len(_dir)] == os.sep:
+				if len(_dir) > len(longest):
+					longest = _dir
 		
 		if longest:
 			base = path[len(longest) + 1:]
@@ -492,7 +460,7 @@ class Reporter(BaseReporter):
 		:param msg:
 		:return:
 		"""
-		from pylint import utils
+		from pylint import utils  # pylint: disable=reimported
 		if isinstance(msg, (utils.Message, utils._MsgBase)):
 			msg = ReporterMessage.from_message(msg)
 			
@@ -616,6 +584,7 @@ class ColorizedTemplate(object):
 		return self
 
 
+
 class ColorReporter(Reporter):
 	name = "colored"
 	by_type = False
@@ -705,7 +674,7 @@ class ColorReporter(Reporter):
 #		return obj
 
 
-a ='''
+'''
 class PyLinterMixIn:
 	manager = lambda x: MANAGER
 	
@@ -824,7 +793,44 @@ class PyLinterMixIn:
 				              confidence)
 		)
 '''
-del a
+
+
+def make_local_table(file='/Users/kristen/PycharmProjects/color_table.pkl'):
+	if not os.path.exists(file):
+		return
+	else:
+		return ColorizedTemplate.from_filename(file)
+
+
+LOCAL_TEMPLATE = make_local_table()
+
+
+
+def rewrite_colored(msg, color_file = None,
+                    template ='{symbol} {fullname}:{line}:{column} | {msg}'):
+	
+	if not color_file:
+		color_template = ColorizedTemplate.from_filename('/Users/kristen/PycharmProjects/color_table.pkl')
+	else:
+		color_template = ColorizedTemplate.from_filename(color_file)
+		
+	reporter = ColorReporter(color_template.by_attr)
+	FIELDS = ReporterMessage._fields
+	
+	colormsg = reporter.colorize_message(msg, *FIELDS).format(template)
+	
+	reporter.writeln(colormsg)
+	
+	
+	
+	
+		
+	
+	
+
+	
+	
+
 
 
 def register(linter):

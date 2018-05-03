@@ -15,7 +15,7 @@ import re # isort:skip
 from startups.helpers.decorators import ExportsList
 __all__ = ExportsList(initlist = __all__, __file__ = __file__) # all-decorator: __all__
 
-import pylint.lint
+#import pylint.lint
 from pylint.utils import _splitstrip, _unquote, _MsgBase, UNDEFINED
 import pylint
 from optparse import Values
@@ -34,18 +34,25 @@ RCFILE = os.environ.get("PYLINTRC")
 #from dictdiffer.utils import PathLimit
 
 
+#class Patched(instance.__class__, ExtraBase): pass
+
+#instance.__class__ = Patched
+
 
 
 class LinterMixIn(object):
 	""""""
 	
 	def _do_load(self):
+		from pylint.config import PYLINTRC
+		from pylint import utils
+		
 		self.load_defaults()
 		try:
 			self.load_default_plugins()
 		except Exception:
 			pass
-		config_file = getattr(self, 'config_file', config.PYLINTRC)
+		config_file = getattr(self, 'config_file', PYLINTRC)
 		self.read_config_file(config_file)
 		
 		if self.cfgfile_parser.has_option('MASTER', 'load-plugins'):
@@ -158,6 +165,7 @@ class LinterMixIn(object):
 				              confidence)
 		)
 	
+	
 def _do_load(linter):
 	"""
 	Workaround if the patched pylint.lint doesn't exist (i.e No PyLinterMixIn class).
@@ -182,13 +190,63 @@ def _do_load(linter):
 	print('External "_do_load" complete!', file = sys.stderr)
 
 
-def get_linter(rcfile = RCFILE):
+def __patch_pylinter():
 	from pylint.lint import PyLinter
-	linter = PyLinter(pylintrc= rcfile)
+	instance = PyLinter(pylintrc=RCFILE)
+	bases = list(PyLinter.__bases__)
+	bases.insert(1, LinterMixIn)
+	
+	bases = tuple(bases)
+	
+	class Linter(PyLinter, LinterMixIn): pass
+	
+	
+	instance.__class__ = Linter
+	
+	module = sys.modules['pylint.lint']
+	
+	setattr(module, 'Linter', Linter)
+	
+	return instance
+	
+
+import wrapt
+
+
+@wrapt.when_imported('pylint.lint')
+def patch_pylinter(module):
+	
+	old_pylinter = getattr(module, 'PyLinter', None)
+	
+	
+	class Linter(old_pylinter, LinterMixIn): pass
+	
+	setattr(module, '__patches__', {'PyLinter': old_pylinter, 'Linter': Linter})
+	
+	setattr(module, 'Linter', Linter)
+	
+	print('PyLinter patched from "lintful.base:patch_pylint_pylinter"!')
+
+
+#wrapt.register_post_import_hook(patch_pylint_pylinter, 'pylint.lint')
+
+
+def get_linter(rcfile = RCFILE):
+	#from pylint.lint import PyLinter
+	import pylint.lint
+	
+	linter_cls = getattr(pylint.lint, 'Linter', pylint.lint.PyLinter)
+	
+	linter = linter_cls(pylintrc= rcfile)
+	
+	
+	
 	if hasattr(linter, '_do_load'):
 		linter._do_load()
+		print('Linter class worked!')
 	else:
 		_do_load(linter)
+		print('External _do_load used')
 		
 	return linter
 	

@@ -5,7 +5,12 @@
 """
 from __future__ import absolute_import, unicode_literals # isort:skip
 
-__all__ = ['MessageComp', 'MESSAGE_FIELDS', 'MessagesSorter', 'lookup', 'make_flat_key']
+__all__ = ['MessageComp', 'MESSAGE_FIELDS', 'Container',
+           'Fielder', 'MessagesSorter', 'lookup', 'make_flat_key', 'iclassmethod', 'MessageList', '_groupby',
+           'grouped']
+
+__all__.sort()
+
 import sys # isort:skip
 import os # isort:skip
 import regex # isort:skip
@@ -18,10 +23,10 @@ from collections import (
     MutableSequence, MutableSet, OrderedDict,)
 import collections
 import dictdiffer
-import dictdiffer.conflict
-import dictdiffer.merge
-import dictdiffer.resolve
-import dictdiffer.unify
+#import dictdiffer.conflict
+#import dictdiffer.merge
+#import dictdiffer.resolve
+#import dictdiffer.unify
 import dictdiffer.utils  # create_dotted_node
 from functools import cmp_to_key, total_ordering
 import itertools
@@ -75,28 +80,31 @@ MESSAGE_FIELDS = BASE_MESSAGE_FIELDS+ [(12, 'checker'),(13, 'fullname')]
 
 
 
-class NestedDict(dict):
-	
-	def __getitem__(self, key):
-		if key in self:
-			return self.get(key)
-		return self.setdefault(key, NestedDict())
-
 class Fielder(object):
-	
-	__slots__ = ['__dict__', '__weakref__', '_field_names', 'field', 'field_list', 'field_order']
+	_field_names = ReporterMessage._fields
+	#__slots__ = ['__dict__', '__weakref__', 'field', 'field_list', 'field_order']
 	
 	def __init__(self, **kwargs):
-		self.__dict__ = kwargs.copy()
+		self.field = kwargs.get('field', None)
+		self.field_list = kwargs.get('fields_list', dict())
+		
+		if not bool(self.field_list):
+			self.field_list = kwargs.get('field_list', dict())
+			
+		self.field_order = kwargs.get('field_order', list(self.field_list))
 		self._field_names = ReporterMessage._fields
-		self.field = None
-		self.field_list = dict()
-		self.field_order = []
+
+		self._kwargs = kwargs.copy()
 		
-		for slot in self.__slots__[2:]:
-			self.__dict__[slot] = getattr(self, slot, None)
+		#for slot in self.__slots__[2:]:
+		#	self.__dict__[slot] = getattr(self, slot, None)
 		
 		
+	@property
+	def fields_list(self):
+		return getattr(self, 'field_list', {})
+	
+	
 	
 		#if isinstance(args[0], dict):
 		#	self.field_list.update(args[0])
@@ -132,6 +140,7 @@ class FieldError(Exception):
 	
 	def __str__(self):
 		return self.message.format(**vars(self))
+
 
 class Container(list):
 	"""
@@ -268,7 +277,7 @@ class MessageContainer(MutableSequence):
 	A container for ReporterMessages
 	"""
 	
-	def __init__(self, data, field=None, **kwargs):
+	def __init__(self, *data, field=None, **kwargs):
 		self.field = field
 		if isinstance(self.field, (list, tuple)):
 			self.field = list(self.field)
@@ -405,216 +414,23 @@ class _Cont(MutableMapping, MutableSequence):
 		return list.__delitem__(self.items, key)
 
 
-class MessageList(MutableSequence, MutableMapping):
-	_delimiter = ':'
-	_field_names = ReporterMessage._fields
+class iclassmethod(object):
+	'''Descriptor for method which should be available as class method if called
+	on the class or instance method if called on an instance.
+	'''
 	
-	__slots__ = ['__dict__', 'field', 'fields_list', 'field_order']
+	def __init__(self, func):
+		self.func = func
 	
-	def __init__(self, *args, **kwargs):
-		self.data = []
-		self.mapping = kwargs.copy()
-		self._keys = set([])
+	def __get__(self, instance, objtype):
+		import types
 		
-		for arg in args:
-			if not arg:
-				continue
-			
-			elif isinstance(arg, dict):
-				for key, val in arg.items():
-					self[key] = self._hook(val)
-					self._keys.add(key)
-			
-			elif isinstance(arg, list):
-				self.data += arg
-			
-			elif isinstance(arg, ReporterMessage):
-				self.data.append(arg)
-		
-		for key, val in kwargs.items():
-			setattr(self, key, val)
-		
-		for slot in self.__slots__[1:]:
-			self.__dict__[slot] = getattr(self, slot, None)
+		if instance is None:
+			return types.MethodType(self.func, objtype)
+		return types.MethodType(self.func, instance)
 	
-	@classmethod
-	def _hook(cls, item):
-		if isinstance(item, dict):
-			return cls(item)
-		elif isinstance(item, (ReporterMessage, Container)):
-			return item
-		elif isinstance(item, (list, tuple)):
-			return type(item)(cls._hook(elem) for elem in item)
-		return item
-	
-		
-	@classmethod
-	def _group(cls, data, field):
-		self = cls(data)
-	
-	#self.fields_list[field] = set(self._grouped.keys())
-	#self.field_order.append(field)
-	
-	def __delitem__(self, key):
-		if key in self.mapping:
-			del self.mapping[key]
-		list.__delitem__(self.data, key)
-	
-	def insert(self, index, object):
-		if isinstance(object, ReporterMessage):
-			return list.insert(self.data, index, object)
-	
-	def __len__(self):
-		return len(self.data) + len(self.mapping)
-	
-	def __setitem__(self, key, value):
-		if isinstance(key, int):
-			return list.__setitem__(self.data, key, value)
-		else:
-			self.mapping[key] = value
-	
-	def __getitem__(self, key):
-		#self.mapping[key]
-		if isinstance(key, int):
-			return list.__getitem__(self.data, key)
-		else:
-			if key in self.mapping:
-				return self.mapping[key]
-	
-	def __missing__(self, key):
-		if key in self.__dict__:
-			return self.__dict__[key]
-		return None
-	
-	def __iter__(self):
-		return iter(self.data)
-
-
-	def iterkeys(self):
-		return collections.KeysView(self.mapping)
-	
-	def itervalues(self):
-		return collections.ValuesView(self.mapping)
-	
-	def iteritems(self):
-		return collections.ItemsView(self.mapping)
-
-
-	def __repr__(self):
-		if self.mapping and not self.data:
-			items = self.mapping.copy()
-		if self.data and not self.mapping:
-			items = self.data[:]
-		if self.data and self.mapping:
-			items = self.data
-		if not self.data and not self.mapping:
-			items = ()
-		#items = ()
-		return '{}({!r})'.format(self.__class__.__name__, items)
-
-
-class _MessageList(MutableMapping, MutableSequence):
-	_field_names = ReporterMessage._fields
-	_delimiter = ':'
-	__slots__ = ['__dict__', 'field', 'field_list', 'field_order']
-	
-	def __init__(self, *args, **kwargs):
-		self.data = []
-		self.mapping = kwargs.copy()
-		self._keys = set([])
-		
-		
-		for arg in args:
-			if not arg:
-				continue
-			
-			elif isinstance(arg, dict):
-				for key, val in arg.items():
-					self[key] = self._hook(val)
-					self._keys.add(key)
-			
-			elif isinstance(arg, list):
-				self.data += arg
-			
-			elif isinstance(arg, ReporterMessage):
-				self.data.append(arg)
-		
-		for key, val in kwargs.items():
-			setattr(self, key, val)
-	
-	@classmethod
-	def _hook(cls, item):
-		if isinstance(item, dict):
-			return cls(item)
-		elif isinstance(item, (ReporterMessage, Container)):
-			return item
-		
-		elif isinstance(item, (list, tuple)):
-			return type(item)(cls._hook(elem) for elem in item)
-		return item
-	
-	@classmethod
-	def _group(cls, data, field):
-		self = cls(data)
-	
-	#self.fields_list[field] = set(self._grouped.keys())
-	#self.field_order.append(field)
-	
-	def __delitem__(self, key):
-		if key in self.mapping:
-			del self.mapping[key]
-		list.__delitem__(self.data, key)
-	
-	def insert(self, index, object):
-		if isinstance(object, ReporterMessage):
-			return list.insert(self.data, index, object)
-	
-	def __len__(self):
-		return len(self.data) + len(self.mapping)
-	
-	def __setitem__(self, key, value):
-		if isinstance(key, int):
-			return list.__setitem__(self.data, key, value)
-		else:
-			self.mapping[key] = value
-	
-	def __getitem__(self, key):
-		#self.mapping[key]
-		if isinstance(key, int):
-			return list.__getitem__(self.data, key)
-		else:
-			if key in self.mapping:
-				return self.mapping[key]
-	
-	def __missing__(self, key):
-		if key in self.__dict__:
-			return self.__dict__[key]
-		return None
-	
-	def __iter__(self):
-		return iter(self.data)
-	
-	def iterkeys(self):
-		return collections.KeysView(self.mapping)
-	
-	def itervalues(self):
-		return collections.ValuesView(self.mapping)
-	
-	def iteritems(self):
-		return collections.ItemsView(self.mapping)
-	
-	def __repr__(self):
-		if self.mapping and not self.data:
-			items = self.mapping.copy()
-		if self.data and not self.mapping:
-			items = self.data[:]
-		if self.data and self.mapping:
-			items = self.data
-		if not self.data and not self.mapping:
-			items = ()
-		#items = ()
-		return '{}({!r})'.format(self.__class__.__name__, items)
-
+	def __set__(self, instance, value):
+		raise AttributeError("can't set attribute")
 
 
 def make_flat_key(node, delimiter=':'):
@@ -675,6 +491,149 @@ def lookup(source, lookup='', parent=False, delimiter=':'):
 	return value
 
 
+class MessageList(MutableSequence, MutableMapping):
+	_delimiter = ':'
+	_field_names = ReporterMessage._fields
+	
+
+	
+	def __init__(self, *args, **kwargs):
+		self.data = []
+		
+		self._fielder = kwargs.pop('fielder', Fielder(**kwargs))
+
+		self.field = kwargs.pop('field', None)
+		self.fields_list = kwargs.pop('fields_list', {})
+		self.field_order = kwargs.pop('field_order', [])
+		
+		self.mapping = kwargs.copy()
+		#self.__dict__ = kwargs.copy()
+		
+		self._keys = set([])
+		
+		for arg in args:
+			if not arg:
+				continue
+			
+			elif isinstance(arg, dict):
+				for key, val in arg.items():
+					self[key] = self._hook(val)
+					self._keys.add(key)
+			
+			elif isinstance(arg, list):
+				self.data += arg
+			
+			elif isinstance(arg, ReporterMessage):
+				self.data.append(arg)
+		
+		for key, val in kwargs.items():
+			setattr(self, key, val)
+		
+		for slot in self.__slots__[1:]:
+			self.__dict__[slot] = getattr(self, slot, None)
+	
+	@classmethod
+	def _hook(cls, item):
+		if isinstance(item, dict):
+			return cls(item)
+		elif isinstance(item, (ReporterMessage, Container)):
+			return item
+		elif isinstance(item, (list, tuple)):
+			return type(item)(cls._hook(elem) for elem in item)
+		return item
+	
+		
+	@iclassmethod
+	def get_delimiter(self):
+		return getattr(self, '_delimiter', ':')
+		
+		
+	#@classmethod
+	#def _group(cls, data, field = 'symbol'):
+	#	self = cls(data, field='symbol')
+	#	return self
+	
+	#self.fields_list[field] = set(self._grouped.keys())
+	#self.field_order.append(field)
+	
+	def __delitem__(self, key):
+		if key in self.mapping:
+			del self.mapping[key]
+		list.__delitem__(self.data, key)
+	
+	def insert(self, index, object):
+		if isinstance(object, ReporterMessage):
+			return list.insert(self.data, index, object)
+	
+	def __len__(self):
+		return len(self.data) + len(self.mapping)
+	
+	def __setitem__(self, key, value):
+		if isinstance(key, int):
+			return list.__setitem__(self.data, key, value)
+		else:
+			self.mapping[key] = value
+	
+	def __getitem__(self, key):
+		#self.mapping[key]
+		if isinstance(key, int):
+			return list.__getitem__(self.data, key)
+		else:
+			if key in self.mapping:
+				return self.mapping[key]
+	
+	def __missing__(self, key):
+		if key in self.__dict__:
+			return self.__dict__[key]
+		return None
+	
+	def __iter__(self):
+		return iter(self.data)
+	
+	
+	def keys(self):
+		"""Return a copy of the flat dictionary's list of keys.
+		See the note for :meth:`flatdict.FlatDict.items`.
+
+		:rtype: list
+
+		"""
+		keys = []
+		for key, value in self.mapping.items():
+			if isinstance(value, (self.__class__, dict)):
+				keys += [self._delimiter.join([key, k]) for k in value.keys()]
+			else:
+				keys.append(key)
+		return sorted(keys)
+
+	def iterkeys(self):
+		return collections.KeysView(self.mapping)
+	
+	def itervalues(self):
+		return collections.ValuesView(self.mapping)
+	
+	def iteritems(self):
+		return collections.ItemsView(self.mapping)
+
+
+	def __repr__(self):
+		if self.mapping and not self.data:
+			items = self.mapping.copy()
+		if self.data and not self.mapping:
+			items = self.data[:]
+		if self.data and self.mapping:
+			items = self.data
+		if not self.data and not self.mapping:
+			items = ()
+		#items = ()
+		return '{}({!r})'.format(self.__class__.__name__, items)
+	
+	make_flat_key = make_flat_key
+	
+	lookup = lookup
+
+
+
 delimiter_re = regex.compile(r'[:|/]')
 
 @return_as(list)
@@ -689,108 +648,11 @@ def _consecutive_slices(iterable):
 
 
 
-
-
-
-
-
-
-class Cont(MutableSequence, MutableMapping):
-	def __init__(self, *args, **kwargs):
-		self.mapping = kwargs.copy()
-		self.data = args[0]
-	
-	def __iter__(self):
-		return iter(self.data)
-	
-	def __len__(self):
-		return len(self.data)
-	
-	def __getitem__(self, key):
-		#self.mapping[key]
-		if isinstance(key, int):
-			return list.__getitem__(self.data, key)
-		else:
-			if key in self.mapping:
-				return self.mapping[key]
-	
-	def __setitem__(self, key, value):
-		if isinstance(key, int):
-			return list.__setitem__(self.data, key, value)
-		else:
-			self.mapping[key] = value
-	
-	def __delitem__(self, key):
-		if key in self.mapping:
-			del self.mapping[key]
-		list.__delitem__(self.data, key)
-	
-	def insert(self, index, object):
-		if isinstance(object, ReporterMessage):
-			return list.insert(self.data, index, object)
-
-
-def __setitem__(self, key, value):
-	"""Assign the value to the key, dynamically building nested
-	FlatDict items where appropriate.
-
-	:param mixed key: The key for the item
-	:param mixed value: The value for the item
-	:raises: TypeError
-
-	"""
-	if isinstance(value, dict) and not isinstance(value, FlatDict):
-		value = self.__class__(value, self._delimiter)
-		
-	if isinstance(key, str) and ':' in key:
-		pk, ck = key.split(':', 1)
-		
-		if pk not in self.mapping:
-			self.mapping[pk] = self.__class__({ck: value}, self._delimiter)
-			
-			return
-		elif not isinstance(self._values[pk], FlatDict):
-			raise TypeError(
-					'Assignment to invalid type for key {}'.format(pk))
-		self._values[pk][ck] = value
-	else:
-		self._values[key] = value
-
-
-def __getitem__(self, key):
-	"""Get an item for the specified key, automatically dealing with
-	nested children.
-
-	:param mixed key: The key to use
-	:rtype: mixed
-	:raises: KeyError
-
-	"""
-	mapping = self.mapping
-	for part in key.split(':'):
-		mapping = mapping[part]
-	return mapping
-
-
-def keys(self):
-	"""Return a copy of the flat dictionary's list of keys.
-	See the note for :meth:`flatdict.FlatDict.items`.
-
-	:rtype: list
-
-	"""
-	keys = []
-	for key, value in self.mapping.items():
-		if isinstance(value, (self.__class__, dict)):
-			keys += [self._delimiter.join([key, k]) for k in value.keys()]
-		else:
-			keys.append(key)
-	return sorted(keys)
-
-
 def group(data, node, path_limit =[('symbol', 'column')],):
 	node = node or []
 	grouper = False
+	
+	key = make_flat_key(node)
 	
 	if isinstance(data, (MutableMapping,)):
 		grouper = True
@@ -799,7 +661,8 @@ def group(data, node, path_limit =[('symbol', 'column')],):
 		grouper = True
 
 
-def _groupby(key, seq):
+
+def _groupby(key, seq, **kwargs):
 	"""
 	
 	:param key:
@@ -810,8 +673,12 @@ def _groupby(key, seq):
 	from collections import defaultdict
 	from startups.misc import attrgetter
 	
-	fields_list = defaultdict(set)
-	d = defaultdict(Container)
+	
+	
+	fields_list = kwargs.get('fields_list', defaultdict(set))
+	field_order = kwargs.get('field_order', list(fields_list))
+	
+	d = defaultdict(MessageList)
 	attr = key[:]
 	key = attrgetter(key)
 	for item in seq:
@@ -819,14 +686,16 @@ def _groupby(key, seq):
 		
 		
 	fields_list[attr].update(d)
+	
 	field = attr
-	return dict(data = d, fields_list =fields_list, field_order =list(fields_list), field = field)
+	return MessageList(dict(d), fields_list =fields_list, field_order =list(fields_list), field = field)
 	
 	
-@return_as(MessageContainer)
+
+@return_as(MessageList)
+@return_as(dict)
 def grouped(field, dic):
 	from startups.misc import attrgetter
-	
 	
 	if isinstance(dic, dict):
 		for k, v in dic.items():
@@ -841,6 +710,108 @@ def grouped(field, dic):
 
 
 
+class _MessageList(object):
+	_field_names = ReporterMessage._fields
+	_delimiter = ':'
+	__slots__ = ['__dict__', 'field', 'field_list', 'field_order']
+	
+	def __init__(self, *args, **kwargs):
+		self.data = []
+		self.mapping = kwargs.copy()
+		self._keys = set([])
+		
+		for arg in args:
+			if not arg:
+				continue
+			
+			elif isinstance(arg, dict):
+				for key, val in arg.items():
+					self[key] = self._hook(val)
+					self._keys.add(key)
+			
+			elif isinstance(arg, list):
+				self.data += arg
+			
+			elif isinstance(arg, ReporterMessage):
+				self.data.append(arg)
+		
+		#for key, val in kwargs.items():
+		#	setattr(self, key, val)
+	
+	@classmethod
+	def _hook(cls, item):
+		if isinstance(item, dict):
+			return cls(item)
+		elif isinstance(item, (ReporterMessage, Container)):
+			return item
+		
+		elif isinstance(item, (list, tuple)):
+			return type(item)(cls._hook(elem) for elem in item)
+		return item
+	
+	
+	@classmethod
+	def _group(cls, data, field):
+		self = cls(data)
+	
+	#self.fields_list[field] = set(self._grouped.keys())
+	#self.field_order.append(field)
+	
+	def __delitem__(self, key):
+		if key in self.mapping:
+			del self.mapping[key]
+		list.__delitem__(self.data, key)
+	
+	def insert(self, index, object):
+		if isinstance(object, ReporterMessage):
+			return list.insert(self.data, index, object)
+	
+	def __len__(self):
+		return len(self.data) + len(self.mapping)
+	
+	def __setitem__(self, key, value):
+		if isinstance(key, int):
+			return list.__setitem__(self.data, key, value)
+		else:
+			self.mapping[key] = value
+	
+	def __getitem__(self, key):
+		#self.mapping[key]
+		if isinstance(key, int):
+			return list.__getitem__(self.data, key)
+		else:
+			if key in self.mapping:
+				return self.mapping[key]
+		
+	
+	def __missing__(self, key):
+		if key in self.__dict__:
+			return self.__dict__[key]
+		return None
+	
+	def __iter__(self):
+		return iter(self.data)
+	
+	def iterkeys(self):
+		return collections.KeysView(self.mapping)
+	
+	def itervalues(self):
+		return collections.ValuesView(self.mapping)
+	
+	def iteritems(self):
+		return collections.ItemsView(self.mapping)
+	
+	def __repr__(self):
+		if self.mapping and not self.data:
+			items = self.mapping.copy()
+		if self.data and not self.mapping:
+			items = self.data[:]
+		if self.data and self.mapping:
+			items = self.data
+		if not self.data and not self.mapping:
+			items = ()
+		#items = ()
+		return '{}({!r})'.format(self.__class__.__name__, items)
 
 class MessageComp(TupleComp):
 	def compare_attr(self, left, right):
@@ -1034,10 +1005,16 @@ class MessagesSorter(object):
 
 
 
-
-
-
 def _get_example_data():
+	"""
+	
+	:return:
+	
+	>>> m = _get_example_data()
+	>>> bool(m)
+	True
+	
+	"""
 	from startups.core import unpickler
 	EXAMPLE_DATA = '/Users/kristen/PycharmProjects/LINTFUL_REPORTER_EXAMPLE.pkl'
 	return unpickler(EXAMPLE_DATA)
@@ -1046,4 +1023,7 @@ EX = _get_example_data()
 
 
 
-if __name__ == '__main__': print(__file__)
+if __name__ == '__main__':
+	
+	from doctest import testmod
+	testmod(__self__, verbose = 2)
