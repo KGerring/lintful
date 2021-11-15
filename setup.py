@@ -12,7 +12,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['Click>=6.0',
-                'pip==9.0.1',
+                'pip==21.1',
                 'bumpversion==0.5.3',
                 'wheel==0.30.0',
                 'watchdog==0.8.3',
