@@ -14,7 +14,7 @@ with open('HISTORY.rst') as history_file:
 requirements = ['Click>=6.0',
                 'pip==9.0.1',
                 'bumpversion==0.5.3',
-                'wheel==0.30.0',
+                'wheel==0.38.1',
                 'watchdog==0.8.3',
                 'flake8==3.5.0',
                 'tox==2.9.1',
